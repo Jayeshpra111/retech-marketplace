@@ -1,0 +1,892 @@
+/* ==========================================================================
+   ReTech Circular Marketplace - Horizontal Filter Bar & Browse Page
+   ========================================================================== */
+
+/* Root Browse Page Container */
+.browse-page-root {
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  background-color: #f9fafb;
+  color: #1f2937;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   1. Full-Width White Horizontal Filter Bar (Directly below navbar)
+   ========================================================================== */
+.hfb-bar {
+  width: 100%;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+}
+
+.hfb-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.625rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.875rem;
+}
+
+/* Left controls scrollable container (Desktop: row, Tablet/Mobile: scroll) */
+.hfb-controls-scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  padding: 0.25rem 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.hfb-controls-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* Vertical divider between "Filters" button and dropdowns */
+.hfb-divider {
+  width: 1px;
+  height: 22px;
+  background-color: #e5e7eb;
+  flex-shrink: 0;
+  margin: 0 0.125rem;
+}
+
+/* Primary "Filters" Button with icon */
+.hfb-main-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease-in-out;
+}
+
+.hfb-main-filter-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.hfb-main-filter-btn--active {
+  background-color: #f0fdf4;
+  border-color: #0f766e;
+  color: #0f766e;
+}
+
+.hfb-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.3rem;
+  border-radius: 9999px;
+  background-color: #0f766e;
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+/* Reusable Dropdown Wrapper */
+.hfb-dropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Dropdown Button / Trigger */
+.hfb-dropdown__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease-in-out;
+}
+
+.hfb-dropdown__btn:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+.hfb-dropdown--active .hfb-dropdown__btn {
+  border-color: #0f766e;
+  background-color: #f0fdf4;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.hfb-dropdown--open .hfb-dropdown__btn {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
+}
+
+.hfb-dropdown__chevron {
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.hfb-dropdown--active .hfb-dropdown__chevron {
+  color: #0f766e;
+}
+
+.hfb-dropdown__chevron--rotated {
+  transform: rotate(180deg);
+}
+
+.hfb-dropdown__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: 9999px;
+  background-color: #0f766e;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* Dropdown Flyout Menu */
+.hfb-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 14rem;
+  max-width: 22rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  overflow: hidden;
+  animation: hfbFadeIn 0.15s ease-out;
+}
+
+@keyframes hfbFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hfb-menu-content {
+  padding: 0.625rem 0.5rem;
+}
+
+.hfb-menu-header {
+  padding: 0.375rem 0.625rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 0.375rem;
+}
+
+.hfb-menu-header--with-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hfb-options-list {
+  max-height: 16rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.hfb-option-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.625rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.hfb-option-item:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.hfb-option-item--selected {
+  background-color: #f0fdf4;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.hfb-check {
+  color: #0f766e;
+}
+
+/* Condition Checkbox Rows inside Dropdown */
+.hfb-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.625rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: #374151;
+  transition: background-color 0.12s ease;
+  user-select: none;
+}
+
+.hfb-checkbox-row:hover {
+  background-color: #f3f4f6;
+}
+
+.hfb-checkbox-row--checked {
+  background-color: #f0fdf4;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.hfb-checkbox-input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #0f766e;
+  cursor: pointer;
+}
+
+.hfb-cond-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hfb-cond-dot--like-new { background-color: #10b981; }
+.hfb-cond-dot--good { background-color: #3b82f6; }
+.hfb-cond-dot--fair { background-color: #f59e0b; }
+.hfb-cond-dot--needs-repair { background-color: #f97316; }
+.hfb-cond-dot--for-parts { background-color: #a855f7; }
+
+.hfb-salvage-pill {
+  margin-left: auto;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  background-color: #f3e8ff;
+  color: #7e22ce;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.hfb-guide-text-btn {
+  border: 0;
+  background: transparent;
+  color: #0f766e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.hfb-guide-text-btn:hover {
+  text-decoration: underline;
+}
+
+.hfb-menu-footer {
+  padding-top: 0.5rem;
+  margin-top: 0.375rem;
+  border-top: 1px solid #f3f4f6;
+  text-align: right;
+}
+
+.hfb-menu-clear-link {
+  border: 0;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hfb-menu-clear-link:hover {
+  text-decoration: underline;
+}
+
+/* Price Dropdown Menu */
+.hfb-menu-price {
+  min-width: 18rem;
+  padding: 0.875rem;
+}
+
+.hfb-price-slider-wrap {
+  margin-top: 0.5rem;
+}
+
+.hfb-price-slider-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.hfb-price-slider-tag {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.hfb-price-slider-amount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.hfb-range-input {
+  width: 100%;
+  accent-color: #0f766e;
+  cursor: pointer;
+}
+
+.hfb-price-range-legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: #9ca3af;
+}
+
+.hfb-price-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.hfb-preset-pill {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  background: #f9fafb;
+  color: #4b5563;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.hfb-preset-pill:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.hfb-preset-pill--active {
+  background: #f0fdf4;
+  border-color: #0f766e;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+/* Verified Sellers & Bill Toggle Chips */
+.hfb-toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease-in-out;
+}
+
+.hfb-toggle-chip:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.hfb-toggle-chip--active {
+  border-color: #0f766e;
+  background-color: #f0fdf4;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.hfb-toggle-icon {
+  color: #6b7280;
+}
+
+.hfb-toggle-chip--active .hfb-toggle-icon {
+  color: #0f766e;
+}
+
+/* Clear All Button */
+.hfb-clear-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.45rem 0.625rem;
+  border: 0;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.hfb-clear-all-btn:hover {
+  color: #b91c1c;
+  text-decoration: underline;
+}
+
+/* Right: Sort By Control */
+.hfb-sort-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.hfb-sort-label {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hfb-sort-select {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  color: #1f2937;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.hfb-sort-select:hover {
+  border-color: #9ca3af;
+}
+
+.hfb-sort-select:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
+}
+
+/* ==========================================================================
+   2. Active Filters & Results Information Section
+   ========================================================================== */
+.browse-content-container {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+  box-sizing: border-box;
+}
+
+.browse-results-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.browse-results-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.browse-results-count strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+.browse-search-query-tag {
+  color: #6b7280;
+}
+
+.browse-escrow-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #ecfdf5;
+  color: #065f46;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+/* Active Filter Chips */
+.browse-chips-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.browse-chips-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.browse-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.browse-chip button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  transition: color 0.12s ease;
+}
+
+.browse-chip button:hover {
+  color: #ef4444;
+}
+
+.browse-chips-clear-all {
+  border: 0;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 0.25rem;
+}
+
+.browse-chips-clear-all:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   3. Product Listings Grid & Empty State
+   ========================================================================== */
+.browse-listings-wrapper {
+  width: 100%;
+}
+
+.browse-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .browse-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .browse-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .browse-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Empty State */
+.browse-empty {
+  max-width: 26rem;
+  margin: 3rem auto;
+  padding: 2.5rem 1.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.browse-empty__icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+.browse-empty__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.browse-empty__text {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.4;
+  margin: 0 0 1.5rem;
+}
+
+.browse-empty__reset-btn {
+  padding: 0.5rem 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background-color: #0f766e;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.browse-empty__reset-btn:hover {
+  background-color: #0d9488;
+}
+
+/* ==========================================================================
+   4. Mobile/Tablet Slide-Over Filter Drawer
+   ========================================================================== */
+.hfb-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: flex-end;
+  animation: hfbOverlayFade 0.2s ease-out;
+}
+
+@keyframes hfbOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hfb-drawer-sheet {
+  width: 100%;
+  max-width: 22rem;
+  height: 100%;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 25px rgba(0, 0, 0, 0.15);
+  animation: hfbDrawerSlide 0.25s ease-out;
+}
+
+@keyframes hfbDrawerSlide {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.hfb-drawer-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hfb-drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.hfb-drawer-close {
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.hfb-drawer-close:hover {
+  color: #111827;
+}
+
+.hfb-drawer-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.hfb-drawer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hfb-drawer-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.hfb-drawer-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hfb-drawer-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  background-color: #ffffff;
+  color: #1f2937;
+  outline: none;
+}
+
+.hfb-drawer-select:focus {
+  border-color: #0f766e;
+}
+
+.hfb-drawer-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hfb-drawer-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.hfb-drawer-reset-btn {
+  padding: 0.625rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hfb-drawer-apply-btn {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.hfb-drawer-apply-btn:hover {
+  background: #0d9488;
+}
+
+/* ==========================================================================
+   Responsive Adjustments
+   ========================================================================== */
+@media (max-width: 640px) {
+  .hfb-container {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .hfb-sort-label {
+    display: none;
+  }
+
+  .hfb-sort-select {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+    max-width: 7.5rem;
+  }
+
+  .browse-content-container {
+    padding: 1rem 0.75rem 2.5rem;
+  }
+}

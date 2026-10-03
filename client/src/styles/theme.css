@@ -1,0 +1,406 @@
+/* ==========================================================================
+   ReTech Circular Market - Light & Dark Theme System
+   ========================================================================== */
+
+/* Theme Toggle Button */
+.site-header__action--theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.site-header__action--theme:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+/* ==========================================================================
+   DARK THEME STYLES (Activated via data-theme="dark" or body.dark-theme)
+   ========================================================================== */
+[data-theme="dark"],
+body.dark-theme {
+  --surface: #111827;
+  --surface-muted: #0b0f19;
+  --border-subtle: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --color-primary: #10b981;
+  --color-primary-hover: #059669;
+  background-color: #0b0f19;
+  color: #f9fafb;
+}
+
+/* Base Body & App Shell in Dark Mode */
+[data-theme="dark"] body,
+body.dark-theme {
+  background-color: #0b0f19;
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .app-shell,
+body.dark-theme .app-shell {
+  background-color: #0b0f19;
+  color: #f9fafb;
+}
+
+/* ── 1. Navbar in Dark Mode ────────────────────────────────────────── */
+[data-theme="dark"] .site-header,
+body.dark-theme .site-header {
+  background-color: #0f172a;
+  border-bottom-color: #1e293b;
+}
+
+[data-theme="dark"] .site-header__action--theme,
+body.dark-theme .site-header__action--theme {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f59e0b;
+}
+
+[data-theme="dark"] .site-header__action--theme:hover,
+body.dark-theme .site-header__action--theme:hover {
+  background-color: #334155;
+  border-color: #475569;
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .site-header__action,
+body.dark-theme .site-header__action {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .site-header__action:hover,
+body.dark-theme .site-header__action:hover {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .site-header__search-input,
+body.dark-theme .site-header__search-input {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .site-header__search-input::placeholder,
+body.dark-theme .site-header__search-input::placeholder {
+  color: #64748b;
+}
+
+[data-theme="dark"] .site-header__subnav,
+body.dark-theme .site-header__subnav {
+  background-color: #090d16;
+  border-bottom-color: #1e293b;
+}
+
+[data-theme="dark"] .site-header__nav-link,
+body.dark-theme .site-header__nav-link {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .site-header__nav-link:hover,
+body.dark-theme .site-header__nav-link:hover {
+  color: #ffffff;
+  background-color: #1e293b;
+}
+
+[data-theme="dark"] .site-header__profile-button,
+body.dark-theme .site-header__profile-button {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .site-header__profile-name,
+body.dark-theme .site-header__profile-name {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .site-header__profile-impact,
+body.dark-theme .site-header__profile-impact {
+  color: #34d399;
+}
+
+[data-theme="dark"] .site-header__profile-menu,
+body.dark-theme .site-header__profile-menu {
+  background-color: #0f172a;
+  border-color: #334155;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .site-header__profile-details p,
+body.dark-theme .site-header__profile-details p {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .site-header__profile-email,
+body.dark-theme .site-header__profile-email {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .site-header__profile-link,
+body.dark-theme .site-header__profile-link {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .site-header__profile-link:hover,
+body.dark-theme .site-header__profile-link:hover {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
+/* ── 2. Horizontal Filter Bar in Dark Mode ─────────────────────────── */
+[data-theme="dark"] .hfb-bar,
+body.dark-theme .hfb-bar {
+  background-color: #0f172a;
+  border-bottom-color: #1e293b;
+}
+
+[data-theme="dark"] .hfb-main-filter-btn,
+body.dark-theme .hfb-main-filter-btn {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .hfb-main-filter-btn:hover,
+body.dark-theme .hfb-main-filter-btn:hover {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .hfb-dropdown__btn,
+body.dark-theme .hfb-dropdown__btn {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .hfb-dropdown__btn:hover,
+body.dark-theme .hfb-dropdown__btn:hover {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .hfb-dropdown--active .hfb-dropdown__btn,
+body.dark-theme .hfb-dropdown--active .hfb-dropdown__btn {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #34d399;
+}
+
+[data-theme="dark"] .hfb-dropdown__menu,
+body.dark-theme .hfb-dropdown__menu {
+  background-color: #0f172a;
+  border-color: #334155;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .hfb-menu-header,
+body.dark-theme .hfb-menu-header {
+  border-bottom-color: #1e293b;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .hfb-option-item,
+body.dark-theme .hfb-option-item {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .hfb-option-item:hover,
+body.dark-theme .hfb-option-item:hover {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .hfb-option-item--selected,
+body.dark-theme .hfb-option-item--selected {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+[data-theme="dark"] .hfb-checkbox-row,
+body.dark-theme .hfb-checkbox-row {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .hfb-checkbox-row:hover,
+body.dark-theme .hfb-checkbox-row:hover {
+  background-color: #1e293b;
+}
+
+[data-theme="dark"] .hfb-checkbox-row--checked,
+body.dark-theme .hfb-checkbox-row--checked {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+[data-theme="dark"] .hfb-toggle-chip,
+body.dark-theme .hfb-toggle-chip {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .hfb-toggle-chip:hover,
+body.dark-theme .hfb-toggle-chip:hover {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .hfb-toggle-chip--active,
+body.dark-theme .hfb-toggle-chip--active {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #34d399;
+}
+
+[data-theme="dark"] .hfb-sort-select,
+body.dark-theme .hfb-sort-select {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .browse-results-bar,
+body.dark-theme .browse-results-bar {
+  border-bottom-color: #1e293b;
+}
+
+[data-theme="dark"] .browse-results-count strong,
+body.dark-theme .browse-results-count strong {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .browse-chip,
+body.dark-theme .browse-chip {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+/* ── 3. Product Listing Cards in Dark Mode ─────────────────────────── */
+[data-theme="dark"] .listing-card,
+body.dark-theme .listing-card {
+  background-color: #111827;
+  border-color: #1f2937;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .listing-card:hover,
+body.dark-theme .listing-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .listing-card__media,
+body.dark-theme .listing-card__media {
+  background-color: #1f2937;
+}
+
+[data-theme="dark"] .listing-card__title,
+body.dark-theme .listing-card__title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .listing-card__price-value,
+body.dark-theme .listing-card__price-value {
+  color: #34d399;
+}
+
+[data-theme="dark"] .listing-card__original-price,
+body.dark-theme .listing-card__original-price {
+  color: #64748b;
+}
+
+[data-theme="dark"] .listing-card__seller-name,
+body.dark-theme .listing-card__seller-name {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .listing-card__city,
+body.dark-theme .listing-card__city {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .listing-card__body,
+body.dark-theme .listing-card__body {
+  background-color: #111827;
+}
+
+/* ── 4. Home Page Category & Salvage Cards in Dark Mode ────────────── */
+[data-theme="dark"] .home-section__title,
+body.dark-theme .home-section__title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .home-section__summary,
+body.dark-theme .home-section__summary {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .home-category-card,
+body.dark-theme .home-category-card {
+  background-color: #111827;
+  border-color: #1f2937;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .home-category-card:hover,
+body.dark-theme .home-category-card:hover {
+  border-color: #374151;
+  background-color: #1f2937;
+}
+
+[data-theme="dark"] .home-category-card__name,
+body.dark-theme .home-category-card__name {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .home-category-card__count,
+body.dark-theme .home-category-card__count {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .home-salvage-banner,
+body.dark-theme .home-salvage-banner {
+  background-color: #111827;
+  border-color: #1f2937;
+}
+
+[data-theme="dark"] .home-salvage-banner__summary,
+body.dark-theme .home-salvage-banner__summary {
+  color: #94a3b8;
+}
+
+/* ── 5. Footer in Dark Mode ────────────────────────────────────────── */
+[data-theme="dark"] .site-footer,
+body.dark-theme .site-footer {
+  background-color: #070b14;
+  border-top-color: #1e293b;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .site-footer__heading,
+body.dark-theme .site-footer__heading {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .site-footer__link,
+body.dark-theme .site-footer__link {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .site-footer__link:hover,
+body.dark-theme .site-footer__link:hover {
+  color: #ffffff;
+}

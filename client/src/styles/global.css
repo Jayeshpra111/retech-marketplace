@@ -1,0 +1,108 @@
+:root {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  color: var(--text-primary);
+  background: var(--surface-muted);
+  --surface: #ffffff;
+  --surface-muted: #f5f7f6;
+  --border-subtle: #e1e6e3;
+  --text-primary: #202a27;
+  --text-secondary: #58645f;
+  --color-primary: #176b55;
+  --color-primary-hover: #125642;
+  --radius-control: 0.5rem;
+  --radius-panel: 0.75rem;
+  --shadow-panel: 0 1px 3px rgba(20, 32, 27, 0.08);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background: #f9fafb;
+}
+
+.app-main {
+  flex: 1;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: #d1d5db;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
