@@ -4,10 +4,27 @@ const apiResponse = require('../utils/apiResponse');
 const { setRefreshCookie, clearRefreshCookie } = require('../utils/token');
 const authService = require('../services/auth.service');
 
+const formatUserResponse = (user) => ({
+  id: user._id,
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  avatar: user.avatar,
+  phone: user.phone || '',
+  sharePhone: user.sharePhone || false,
+  address: user.address || {},
+  isEmailVerified: user.isEmailVerified,
+  ratingAvg: user.ratingAvg || 0,
+  ratingCount: user.ratingCount || 0,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
+
 const register = asyncHandler(async (req, res) => {
   const { user } = await authService.register(req.body);
   apiResponse(res, 201, 'Registration successful. Please check your email to verify your account.', {
-    user: { id: user._id, name: user.name, email: user.email },
+    user: formatUserResponse(user),
   });
 });
 
@@ -16,12 +33,13 @@ const login = asyncHandler(async (req, res) => {
   setRefreshCookie(res, refreshToken);
   apiResponse(res, 200, 'Logged in successfully.', {
     accessToken,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, isEmailVerified: user.isEmailVerified },
+    user: formatUserResponse(user),
   });
 });
 
 const logout = asyncHandler(async (req, res) => {
-  await authService.logout(req.user._id);
+  const rawToken = req.cookies?.refreshToken;
+  await authService.logout(req.user._id, rawToken);
   clearRefreshCookie(res);
   apiResponse(res, 200, 'Logged out successfully.');
 });

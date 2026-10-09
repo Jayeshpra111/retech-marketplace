@@ -16,21 +16,37 @@ import {
   Package,
   Flag,
   ChevronRight,
-  Cpu
+  Cpu,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { CONDITION_GRADES } from '../data/mockData';
 import ConditionModal from '../components/ConditionModal';
+import EditListingModal from '../components/EditListingModal';
+import DeviceHealthReportCard from '../components/DeviceHealthReportCard';
 import api from '../services/api';
 import '../styles/pages.css';
 
 export default function ListingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { listings, wishlist, toggleWishlist, setActiveChatListing } = useApp();
+  const { listings, wishlist, toggleWishlist, setActiveChatListing, user } = useApp();
 
   const localListing = listings.find(l => l.id === id || l._id === id);
   const [fetchedListing, setFetchedListing] = useState(null);
+  const [healthReport, setHealthReport] = useState(null);
+
+  React.useEffect(() => {
+    if (id) {
+      api.listings.getHealthReport(id)
+        .then(res => {
+          if (res?.data) setHealthReport(res.data);
+        })
+        .catch(() => {});
+    }
+  }, [id]);
 
   React.useEffect(() => {
     if (!localListing && id) {
@@ -40,12 +56,14 @@ export default function ListingDetailPage() {
             const l = res.data;
             setFetchedListing({
               id: l._id || l.id,
+              _id: l._id || l.id,
               title: l.title,
               category: l.category?.slug || l.category?.name || 'Electronics',
               price: l.price,
               originalPrice: l.originalPrice || l.price * 1.4,
               condition: l.condition,
               seller: {
+                _id: l.seller?._id || l.seller?.id || (typeof l.seller === 'string' ? l.seller : undefined),
                 name: l.seller?.name || 'Verified Seller',
                 rating: l.seller?.ratingAvg || 4.9,
                 reviewCount: l.seller?.ratingCount || 12,
@@ -72,9 +90,10 @@ export default function ListingDetailPage() {
     }
   }, [id, localListing]);
 
-  const listing = localListing || fetchedListing || listings[0];
+  const listing = fetchedListing || localListing || listings[0];
   const [selectedImage, setSelectedImage] = useState(0);
   const [isConditionModalOpen, setIsConditionModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [offerPrice, setOfferPrice] = useState(Math.round((listing?.price || 1000) * 0.9));
   const [offerSubmitted, setOfferSubmitted] = useState(false);
@@ -82,7 +101,37 @@ export default function ListingDetailPage() {
   const [reportReason, setReportReason] = useState('condition');
   const [reportSubmitted, setReportSubmitted] = useState(false);
 
-  const isWishlisted = wishlist.includes(listing.id);
+  const isOwner = Boolean(
+    user && listing && (
+      (listing.seller?._id && String(listing.seller._id) === String(user._id || user.id)) ||
+      (listing.seller?.id && String(listing.seller.id) === String(user._id || user.id)) ||
+      (typeof listing.seller === 'string' && listing.seller === String(user._id || user.id))
+    )
+  );
+
+  const handleListingUpdated = (updated) => {
+    setFetchedListing((prev) => ({
+      ...(prev || listing),
+      ...updated,
+      id: updated._id || updated.id || (prev || listing).id,
+      _id: updated._id || updated.id || (prev || listing)._id,
+    }));
+  };
+
+  const handleDeleteListing = async () => {
+    if (!window.confirm(`Are you sure you want to delete "${listing.title}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await api.listings.delete(listing._id || listing.id);
+      toast.success('Listing deleted successfully.');
+      navigate('/dashboard?tab=listings');
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete listing.');
+    }
+  };
+
+  const isWishlisted = wishlist.includes(listing.id || listing._id);
   const conditionInfo = CONDITION_GRADES[listing.condition] || CONDITION_GRADES.good;
   const city = listing.city || (typeof listing.location === 'string' ? listing.location : listing.location?.city) || 'Location unavailable';
 
@@ -94,22 +143,45 @@ export default function ListingDetailPage() {
     }).format(val);
   };
 
-  const handleMakeOffer = (e) => {
+  const handleMakeOffer = async (e) => {
     e.preventDefault();
-    setOfferSubmitted(true);
-    setTimeout(() => {
-      setIsOfferModalOpen(false);
-      setOfferSubmitted(false);
-    }, 2000);
+    if (!offerPrice || offerPrice <= 0) {
+      toast.error('Please enter a valid offer amount.');
+      return;
+    }
+    try {
+      await api.offers.create({
+        listingId: listing._id || listing.id,
+        amount: Number(offerPrice),
+      });
+      setOfferSubmitted(true);
+      toast.success('Offer submitted to seller!');
+      setTimeout(() => {
+        setIsOfferModalOpen(false);
+        setOfferSubmitted(false);
+      }, 2000);
+    } catch (err) {
+      toast.error(err.message || 'Failed to submit offer. Ensure you are logged in.');
+    }
   };
 
-  const handleReport = (e) => {
+  const handleReport = async (e) => {
     e.preventDefault();
-    setReportSubmitted(true);
-    setTimeout(() => {
-      setReportModalOpen(false);
-      setReportSubmitted(false);
-    }, 2000);
+    try {
+      await api.reports.create({
+        targetType: 'listing',
+        targetId: listing._id || listing.id,
+        reason: reportReason,
+      });
+      setReportSubmitted(true);
+      toast.success('Listing reported for safety review.');
+      setTimeout(() => {
+        setReportModalOpen(false);
+        setReportSubmitted(false);
+      }, 2000);
+    } catch (err) {
+      toast.error(err.message || 'Failed to submit report.');
+    }
   };
 
   return (
@@ -270,49 +342,82 @@ export default function ListingDetailPage() {
 
           {/* Main Action CTAs */}
           <div className="listing-actions">
+            {isOwner ? (
+              <div className="listing-actions__owner-panel">
+                <div className="listing-actions__owner-badge">
+                  <ShieldCheck size={18} />
+                  <span>You listed this item for sale</span>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.825rem', color: '#94a3b8' }}>
+                  As the seller, you can edit price, description, images, condition, or remove this listing.
+                </p>
+                <div className="listing-actions__owner-buttons">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="listing-actions__edit-btn"
+                  >
+                    <Pencil size={15} />
+                    <span>Edit Listing Details</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteListing}
+                    className="listing-actions__delete-btn"
+                  >
+                    <Trash2 size={15} />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate(`/checkout/${listing.id || listing._id}`)}
+                  className="listing-actions__buy"
+                >
+                  <ShieldCheck className="detail-icon detail-icon--medium" />
+                  <span>Buy Now with Escrow Protection</span>
+                </button>
 
-            <button
-              onClick={() => navigate(`/checkout/${listing.id}`)}
-              className="listing-actions__buy"
-            >
-              <ShieldCheck className="detail-icon detail-icon--medium" />
-              <span>Buy Now with Escrow Protection</span>
-            </button>
+                <div className="listing-actions__secondary">
+                  <button
+                    onClick={() => setActiveChatListing(listing)}
+                    className="listing-actions__button"
+                  >
+                    <MessageSquare className="detail-icon detail-icon--small" />
+                    <span>Chat with Seller</span>
+                  </button>
 
-            <div className="listing-actions__secondary">
-              <button
-                onClick={() => setActiveChatListing(listing)}
-                className="listing-actions__button"
-              >
-                <MessageSquare className="detail-icon detail-icon--small" />
-                <span>Chat with Seller</span>
-              </button>
-
-              <button
-                onClick={() => setIsOfferModalOpen(true)}
-                className="listing-actions__button"
-              >
-                <Zap className="detail-icon detail-icon--small detail-icon--amber" />
-                <span>Make an Offer</span>
-              </button>
-            </div>
+                  <button
+                    onClick={() => setIsOfferModalOpen(true)}
+                    className="listing-actions__button"
+                  >
+                    <Zap className="detail-icon detail-icon--small detail-icon--amber" />
+                    <span>Make an Offer</span>
+                  </button>
+                </div>
+              </>
+            )}
 
             <div className="listing-actions__utility">
               <button
-                onClick={() => toggleWishlist(listing.id)}
+                onClick={() => toggleWishlist(listing.id || listing._id)}
                 className="listing-actions__wishlist"
               >
                 <Heart className={`detail-icon detail-icon--small ${isWishlisted ? 'is-saved' : ''}`} />
                 <span>{isWishlisted ? 'Saved in Wishlist' : 'Add to Wishlist'}</span>
               </button>
 
-              <button
-                onClick={() => setReportModalOpen(true)}
-                className="listing-actions__report"
-              >
-                <Flag className="detail-icon detail-icon--tiny" />
-                <span>Report listing</span>
-              </button>
+              {!isOwner && (
+                <button
+                  onClick={() => setReportModalOpen(true)}
+                  className="listing-actions__report"
+                >
+                  <Flag className="detail-icon detail-icon--tiny" />
+                  <span>Report listing</span>
+                </button>
+              )}
             </div>
 
           </div>
@@ -402,6 +507,15 @@ export default function ListingDetailPage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Device Health Report Diagnostics Card (Prompt 1) */}
+          {healthReport && (
+            <DeviceHealthReportCard
+              report={healthReport}
+              listingId={id}
+              isAdmin={user?.role === 'admin'}
+            />
           )}
 
           {/* Description */}
@@ -571,6 +685,14 @@ export default function ListingDetailPage() {
       <ConditionModal
         isOpen={isConditionModalOpen}
         onClose={() => setIsConditionModalOpen(false)}
+      />
+
+      {/* Edit Listing Modal (Owner only) */}
+      <EditListingModal
+        isOpen={isEditModalOpen}
+        listing={listing}
+        onClose={() => setIsEditModalOpen(false)}
+        onUpdated={handleListingUpdated}
       />
 
     </div>

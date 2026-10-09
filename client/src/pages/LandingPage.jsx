@@ -19,7 +19,10 @@ export default function LandingPage() {
   const { theme, toggleTheme } = useApp();
 
   return (
-    <div className="landing-screen">
+    <div 
+      className={`landing-screen ${theme === 'light' ? 'landing-screen--light' : 'landing-screen--dark'}`}
+      data-theme={theme}
+    >
 
       {/* ── 1. Minimal Dark Header ───────────────────────────────────── */}
       <header className="landing-header">

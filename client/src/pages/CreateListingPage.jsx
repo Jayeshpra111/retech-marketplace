@@ -11,9 +11,14 @@ import {
   Lock, 
   Trash2, 
   Sparkles,
+  BatteryCharging,
+  Monitor,
+  CheckCircle2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { api } from '../services/api';
 import { CATEGORIES, CONDITION_GRADES } from '../data/mockData';
+import toast from 'react-hot-toast';
 import '../styles/pages.css';
 
 export default function CreateListingPage() {
@@ -40,17 +45,51 @@ export default function CreateListingPage() {
   const [hasBox, setHasBox] = useState(false);
   const [city, setCity] = useState('Bangalore, KA');
 
+  // Device Health Diagnostics (Prompt 1)
+  const [deviceHealth, setDeviceHealth] = useState({
+    batteryHealthPercent: 92,
+    cycleCount: 180,
+    chargesProperly: true,
+    touchWorks: true,
+    deadPixels: false,
+    burnIn: false,
+    scratches: 'none',
+    smartStatus: 'healthy',
+    camera: true,
+    speakers: true,
+    wifiBluetooth: true,
+  });
+
   // For Parts breakdown
   const [whatWorks, setWhatWorks] = useState('');
   const [whatBroken, setWhatBroken] = useState('');
 
-  // Photos
-  const [images, setImages] = useState([
+  // Photos & real file uploads
+  const fileInputRef = React.useRef(null);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([
     'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=800&auto=format&fit=crop&q=80'
   ]);
   const [price, setPrice] = useState('');
   const [originalPrice, setOriginalPrice] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const remainingSlots = 6 - imagePreviews.length;
+    const newFiles = files.slice(0, remainingSlots);
+
+    setImageFiles((prev) => [...prev, ...newFiles]);
+    const newUrls = newFiles.map((f) => URL.createObjectURL(f));
+    setImagePreviews((prev) => [...prev, ...newUrls]);
+  };
+
+  const removePhoto = (idx) => {
+    setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
+    setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   // Data Wipe Checklist (Must all be checked)
   const [wipeChecklist, setWipeChecklist] = useState({
@@ -63,55 +102,89 @@ export default function CreateListingPage() {
   const allWiped = Object.values(wipeChecklist).every(Boolean);
 
   // Calculate environmental diversion
-  const catObj = CATEGORIES.find(c => c.id === category);
-  const estimatedImpactKg = catObj?.impactMultiplier ? Number((catObj.impactMultiplier * (condition === 'for_parts' ? 0.7 : 1.0)).toFixed(2)) : 0.8;
+  const catObj = CATEGORIES.find((c) => c.id === category);
+  const estimatedImpactKg = catObj?.impactMultiplier
+    ? Number((catObj.impactMultiplier * (condition === 'for_parts' ? 0.7 : 1.0)).toFixed(2))
+    : 0.8;
   const estimatedCo2Saved = Math.round(estimatedImpactKg * 65);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    const itemTitle = (title.trim() || `${brand || ''} ${model || ''}`).trim() || category || 'Electronic Item';
+    const safeTitle = itemTitle.length >= 3 ? itemTitle : `${itemTitle} Item`;
 
-    const newListing = {
-      id: `listing-${Date.now()}`,
-      title: title || `${brand} ${model}`,
-      category,
-      price: Number(price) || 25000,
-      originalPrice: Number(originalPrice) || Number(price) * 1.5,
-      condition,
-      conditionDetails: conditionDetails || 'Accurately described, functional and tested.',
-      whatWorks: condition === 'for_parts' ? whatWorks : null,
-      whatBroken: condition === 'for_parts' ? whatBroken : null,
-      brand: brand || 'Generic',
-      model: model || 'Device',
-      age,
-      warranty,
-      hasBill,
-      hasBox,
-      accessories: ['Original Charger'],
-      city,
-      seller: {
-        id: user.id,
-        name: user.name,
-        avatar: user.avatar,
-        rating: 5.0,
-        reviewCount: 1,
-        verified: true,
-        memberSince: 'Sept 2026',
-        responseTime: '< 10 mins'
-      },
-      images,
-      impactKg: estimatedImpactKg,
-      co2SavedKg: estimatedCo2Saved,
-      specs: {
-        'Brand': brand,
-        'Model': model,
-      },
-      isNegotiable: true,
-      views: 1,
-      createdAt: 'Just now'
-    };
+    if (!price || Number(price) <= 0) {
+      toast.error('Please provide a valid asking price.');
+      return;
+    }
 
-    addListing(newListing);
-    navigate(`/listings/${newListing.id}`);
+    const safeDescription =
+      conditionDetails && conditionDetails.length >= 10
+        ? conditionDetails
+        : `${safeTitle} in ${condition} condition. Certified and accurately graded for ReTech Circular Marketplace.`;
+
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('title', safeTitle);
+      formData.append('description', safeDescription);
+      formData.append('category', category);
+      formData.append('price', String(Number(price)));
+      formData.append('condition', condition);
+      if (brand) formData.append('brand', brand);
+      if (model) formData.append('model', model);
+      if (serialNumber) formData.append('serialNumber', serialNumber);
+      formData.append('hasBill', String(hasBill));
+      formData.append('location', JSON.stringify({ city: city || 'Bangalore', state: 'KA' }));
+
+      // Attach real file blobs
+      imageFiles.forEach((file) => {
+        formData.append('images', file);
+      });
+
+      const res = await addListing(formData);
+
+      // Auto-attach Device Health Report (Prompt 1)
+      if (res?._id || res?.id) {
+        const listingId = res._id || res.id;
+        try {
+          const isPhoneOrLaptop = ['mobiles', 'phones', 'tablets', 'laptops', 'macbooks'].some(k => category.toLowerCase().includes(k));
+          await api.listings.createHealthReport(listingId, {
+            deviceType: isPhoneOrLaptop
+              ? (category.includes('phone') || category.includes('mobile') ? 'phone' : 'laptop')
+              : (category.includes('gpu') ? 'gpu' : 'component'),
+            battery: {
+              healthPercent: Number(deviceHealth.batteryHealthPercent) || 95,
+              cycleCount: Number(deviceHealth.cycleCount) || 150,
+              chargesProperly: Boolean(deviceHealth.chargesProperly),
+            },
+            screen: {
+              touchWorks: Boolean(deviceHealth.touchWorks),
+              deadPixels: Boolean(deviceHealth.deadPixels),
+              burnIn: Boolean(deviceHealth.burnIn),
+              scratches: deviceHealth.scratches || 'none',
+            },
+            storage: {
+              smartStatus: deviceHealth.smartStatus || 'healthy',
+            },
+            camera: Boolean(deviceHealth.camera),
+            speakers: Boolean(deviceHealth.speakers),
+            wifiBluetooth: Boolean(deviceHealth.wifiBluetooth),
+            notes: safeDescription,
+          });
+        } catch (healthErr) {
+          console.warn('Could not attach health report:', healthErr.message);
+        }
+      }
+
+      navigate('/dashboard?tab=listings');
+    } catch (err) {
+      // Error is caught and surfaced to user
+      toast.error(err.message || 'Error publishing listing. Please check required fields.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -171,7 +244,7 @@ export default function CreateListingPage() {
               >
                 {CATEGORIES.filter(c => c.id !== 'all').map(c => (
                   <option key={c.id} value={c.id}>
-                    {c.name} {c.isComponent ? '— (Hardware Component)' : ''}
+                    {c.name}
                   </option>
                 ))}
               </select>
@@ -372,6 +445,107 @@ export default function CreateListingPage() {
               </label>
             </div>
 
+            {/* Device Health & Diagnostic Certification (Prompt 1) */}
+            <div className="create-health-section" style={{ marginTop: '1.5rem', padding: '1.25rem', background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <ShieldCheck style={{ color: '#10b981' }} size={20} />
+                <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
+                  Device Health & Diagnostic Certification
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1rem' }}>
+                Accurate diagnostics generate a higher <strong>Health Score (0–100)</strong>, increasing buyer trust and sale speed.
+              </p>
+
+              {/* Dynamic inputs based on category */}
+              {['mobiles', 'phones', 'tablets', 'laptops', 'macbooks'].some(k => category.toLowerCase().includes(k)) ? (
+                <>
+                  <div className="create-listing-field-grid create-listing-field-grid--two">
+                    <div>
+                      <label className="create-listing-label">Battery Health (%) *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={deviceHealth.batteryHealthPercent}
+                        onChange={(e) => setDeviceHealth({ ...deviceHealth, batteryHealthPercent: Number(e.target.value) })}
+                        placeholder="e.g. 94"
+                        className="create-listing-control create-listing-control--compact"
+                      />
+                    </div>
+                    <div>
+                      <label className="create-listing-label">Battery Cycle Count</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={deviceHealth.cycleCount}
+                        onChange={(e) => setDeviceHealth({ ...deviceHealth, cycleCount: Number(e.target.value) })}
+                        placeholder="e.g. 180"
+                        className="create-listing-control create-listing-control--compact"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="create-listing-toggles" style={{ marginTop: '0.75rem' }}>
+                    <label className="create-listing-toggle">
+                      <input
+                        type="checkbox"
+                        checked={deviceHealth.touchWorks}
+                        onChange={(e) => setDeviceHealth({ ...deviceHealth, touchWorks: e.target.checked })}
+                        className="create-listing-checkbox"
+                      />
+                      <span>Display Touch & Digitizer 100% Responsive</span>
+                    </label>
+                    <label className="create-listing-toggle">
+                      <input
+                        type="checkbox"
+                        checked={!deviceHealth.deadPixels}
+                        onChange={(e) => setDeviceHealth({ ...deviceHealth, deadPixels: !e.target.checked })}
+                        className="create-listing-checkbox"
+                      />
+                      <span>Zero Dead Pixels or Display Lines</span>
+                    </label>
+                    <label className="create-listing-toggle">
+                      <input
+                        type="checkbox"
+                        checked={deviceHealth.chargesProperly}
+                        onChange={(e) => setDeviceHealth({ ...deviceHealth, chargesProperly: e.target.checked })}
+                        className="create-listing-checkbox"
+                      />
+                      <span>Charges Properly via Port</span>
+                    </label>
+                  </div>
+                </>
+              ) : (
+                /* GPU / Component Diagnostics */
+                <div className="create-listing-field-grid create-listing-field-grid--two">
+                  <div>
+                    <label className="create-listing-label">Storage / Drive SMART Health</label>
+                    <select
+                      value={deviceHealth.smartStatus}
+                      onChange={(e) => setDeviceHealth({ ...deviceHealth, smartStatus: e.target.value })}
+                      className="create-listing-control"
+                    >
+                      <option value="healthy">Healthy (100% SMART Passed)</option>
+                      <option value="warning">Warning (Caution / Reallocated sectors)</option>
+                      <option value="failing">Failing / Critical</option>
+                      <option value="untested">Untested</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="create-listing-label">Display Ports Tested</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value="HDMI, DisplayPort, Type-C Output Functional"
+                      className="create-listing-control create-listing-control--compact"
+                      style={{ opacity: 0.8 }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="create-listing-step__actions">
               <button
                 type="button"
@@ -435,9 +609,17 @@ export default function CreateListingPage() {
             </div>
 
             <div>
-              <label className="create-listing-label">Upload Photos (Min 2, Max 6)</label>
+              <label className="create-listing-label">Upload Photos (Min 1, Max 6)</label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                multiple
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
               <div className="create-listing-photo-grid">
-                {images.map((img, idx) => (
+                {imagePreviews.map((img, idx) => (
                   <div key={idx} className="create-listing-photo">
                     <img src={img} alt="Preview" className="create-listing-photo__image" />
                     {idx === 0 && (
@@ -447,7 +629,7 @@ export default function CreateListingPage() {
                     )}
                     <button
                       type="button"
-                      onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                      onClick={() => removePhoto(idx)}
                       className="create-listing-photo__remove"
                     >
                       <Trash2 className="create-listing-icon create-listing-icon--tiny" />
@@ -455,16 +637,14 @@ export default function CreateListingPage() {
                   </div>
                 ))}
 
-                {images.length < 6 && (
+                {imagePreviews.length < 6 && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setImages([...images, 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop&q=80']);
-                    }}
+                    onClick={() => fileInputRef.current?.click()}
                     className="create-listing-photo__add"
                   >
                     <Upload className="create-listing-icon create-listing-icon--medium" />
-                    <span>Add Photo</span>
+                    <span>Upload Device Photos</span>
                   </button>
                 )}
               </div>
@@ -641,10 +821,11 @@ export default function CreateListingPage() {
               </button>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="create-listing-button create-listing-button--primary create-listing-button--publish"
               >
                 <Sparkles className="create-listing-icon create-listing-icon--small" />
-                <span>Publish Listing Now</span>
+                <span>{isSubmitting ? 'Uploading & Creating Listing...' : 'Publish Listing Now'}</span>
               </button>
             </div>
           </form>

@@ -75,18 +75,47 @@ const respondOffer = asyncHandler(async (req, res) => {
   const isSeller = offer.listing.seller.toString() === req.user._id.toString();
   const isBuyer = offer.buyer.toString() === req.user._id.toString();
 
+  if (!isSeller && !isBuyer) throw new AppError('Access denied.', 403);
+
+  // Check expiration
+  if (offer.expiresAt && new Date(offer.expiresAt) < new Date()) {
+    offer.status = 'expired';
+    await offer.save();
+    throw new AppError('This offer has expired.', 400);
+  }
+
+  // Check current status
+  if (!['pending', 'countered'].includes(offer.status)) {
+    throw new AppError(`Cannot respond to offer that is already ${offer.status}.`, 400);
+  }
+
+  if (offer.status === 'pending') {
+    // Initial offer made by buyer — only seller can accept, reject, or counter
+    if (!isSeller) {
+      throw new AppError('Only the seller can accept, reject, or counter a pending offer.', 403);
+    }
+  } else if (offer.status === 'countered') {
+    // Counter-offer made by seller — only buyer can accept or reject
+    if (!isBuyer) {
+      throw new AppError('Only the buyer can respond to a counter-offer.', 403);
+    }
+    if (action === 'countered') {
+      throw new AppError('Cannot counter a counter-offer. Please accept or reject.', 400);
+    }
+  }
+
   if (action === 'countered') {
-    if (!isSeller) throw new AppError('Only the seller can counter an offer.', 403);
     if (!counterAmount || counterAmount <= 0) {
       throw new AppError('Please provide a valid counterAmount.', 400);
     }
     offer.status = 'countered';
     offer.counterAmount = counterAmount;
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 48);
+    offer.expiresAt = expiresAt;
   } else if (action === 'accepted') {
-    if (!isSeller && !isBuyer) throw new AppError('Access denied.', 403);
     offer.status = 'accepted';
   } else if (action === 'rejected') {
-    if (!isSeller && !isBuyer) throw new AppError('Access denied.', 403);
     offer.status = 'rejected';
   }
 

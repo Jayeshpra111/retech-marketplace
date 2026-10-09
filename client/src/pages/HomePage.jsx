@@ -29,7 +29,7 @@ import ConditionModal from '../components/ConditionModal';
 import '../styles/pages.css';
 
 export default function HomePage() {
-  const { listings, totalEwasteDiverted, totalCo2Saved, user } = useApp();
+  const { listings, isListingsLoading, totalEwasteDiverted, totalCo2Saved, user } = useApp();
   const [searchVal, setSearchVal] = useState('');
   const [isConditionModalOpen, setIsConditionModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -172,9 +172,9 @@ export default function HomePage() {
             <div className="dlh-popular-pills">
               <span className="dlh-popular-label">Popular:</span>
               <button type="button" onClick={() => navigate('/browse?q=MacBook')} className="dlh-pill">MacBook M1</button>
-              <button type="button" onClick={() => navigate('/browse?isComponent=true')} className="dlh-pill">Graphics Cards</button>
-              <button type="button" onClick={() => navigate('/browse?q=DDR5')} className="dlh-pill">DDR5 RAM</button>
-              <button type="button" onClick={() => navigate('/browse?condition=for_parts')} className="dlh-pill dlh-pill--salvage">Sell for Parts</button>
+              <button type="button" onClick={() => navigate('/browse?q=iPhone')} className="dlh-pill">iPhone 14</button>
+              <button type="button" onClick={() => navigate('/browse?q=iPad')} className="dlh-pill">iPad Pro</button>
+              <button type="button" onClick={() => navigate('/browse?q=Sony')} className="dlh-pill">Sony Headphones</button>
             </div>
           </form>
 
@@ -247,6 +247,8 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
+
+        
       </section>
 
       {/* 3. Shop by Category Grid (with Component Marketplace & For Parts) */}
@@ -255,7 +257,7 @@ export default function HomePage() {
           <div>
             <h2 className="home-section__title">Explore by Category</h2>
             <p className="home-section__summary">
-              Complete consumer devices, PC components, and salvageable donor hardware
+              Verified pre-owned smartphones, laptops, audio, tablets, and gaming consoles
             </p>
           </div>
           <Link
@@ -347,9 +349,24 @@ export default function HomePage() {
         </div>
 
         <div className="home-listing-grid">
-          {listings.slice(0, 8).map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
+          {isListingsLoading && listings.length === 0 ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '16px',
+                  height: '340px',
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                }}
+              />
+            ))
+          ) : (
+            listings.slice(0, 8).map((listing) => (
+              <ListingCard key={listing.id || listing._id} listing={listing} />
+            ))
+          )}
         </div>
 
         <div className="home-listing-more">

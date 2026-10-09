@@ -9,8 +9,18 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000,
     });
     logger.info(`MongoDB connected: ${conn.connection.host}`);
+    return conn;
   } catch (err) {
-    logger.error({ err }, 'MongoDB connection failed');
+    const msg = err.message || '';
+    if (err.code === 8000 || /auth|password/i.test(msg)) {
+      logger.error('MongoDB connection failed: wrong username or password.');
+    } else if (/whitelist|firewall|timed out|Server selection timed out/i.test(msg) || err.name === 'MongooseServerSelectionError') {
+      logger.error('MongoDB connection failed: IP address not allowed in Atlas Network Access or cluster unreachable.');
+    } else if (/invalid connection string|scheme|parse/i.test(msg) || err.name === 'MongoParseError') {
+      logger.error('MongoDB connection failed: invalid connection string.');
+    } else {
+      logger.error('MongoDB connection failed: connection error occurred.');
+    }
     process.exit(1);
   }
 };

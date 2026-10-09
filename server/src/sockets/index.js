@@ -78,10 +78,17 @@ const initSocket = (io) => {
 
         await message.populate('sender', 'name avatar');
 
-        // Broadcast to conversation room and user rooms
+        // Broadcast to conversation room once (prevents duplicate deliveries)
         io.to(`conv:${conversationId}`).emit('newMessage', message);
+
+        // Notify other participants for inbox preview / unread counter
         conv.participants.forEach((pid) => {
-          io.to(`user:${pid}`).emit('newMessage', message);
+          if (pid.toString() !== socket.userId) {
+            io.to(`user:${pid.toString()}`).emit('conversationUpdated', {
+              conversationId,
+              lastMessage: message,
+            });
+          }
         });
 
         if (callback) callback({ success: true, message });

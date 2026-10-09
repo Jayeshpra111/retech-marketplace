@@ -17,11 +17,17 @@ import ConditionModal from "../components/ConditionModal";
 import "../styles/browse.css";
 
 // Hook to close dropdown on click outside
-function useOutsideClick(ref, handler) {
+function useOutsideClick(ref, handler, isOpen) {
+  const savedHandler = useRef(handler);
   useEffect(() => {
+    savedHandler.current = handler;
+  }, [handler]);
+
+  useEffect(() => {
+    if (!isOpen) return;
     const listener = (e) => {
       if (ref.current && !ref.current.contains(e.target)) {
-        handler();
+        savedHandler.current?.();
       }
     };
     document.addEventListener("mousedown", listener);
@@ -30,14 +36,14 @@ function useOutsideClick(ref, handler) {
       document.removeEventListener("mousedown", listener);
       document.removeEventListener("touchstart", listener);
     };
-  }, [ref, handler]);
+  }, [ref, isOpen]);
 }
 
 // Reusable horizontal dropdown button
 function FilterDropdown({ label, count = 0, isActive = false, children, className = "" }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  useOutsideClick(dropdownRef, () => setIsOpen(false));
+  useOutsideClick(dropdownRef, () => setIsOpen(false), isOpen);
 
   return (
     <div className={`hfb-dropdown ${isActive ? "hfb-dropdown--active" : ""} ${isOpen ? "hfb-dropdown--open" : ""} ${className}`} ref={dropdownRef}>
@@ -71,10 +77,9 @@ export default function BrowsePage() {
   const initialCategory = searchParams.get("category") || "all";
   const initialSearch = searchParams.get("q") || "";
   const initialCondition = searchParams.get("condition") || "";
-  const isComponentFilter = searchParams.get("isComponent") === "true";
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [selectedCategory, setSelectedCategory] = useState(isComponentFilter ? "gpus" : initialCategory);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedConditions, setSelectedConditions] = useState(
     initialCondition ? [initialCondition] : []
   );
@@ -216,10 +221,10 @@ export default function BrowsePage() {
           {/* Left: Scrollable horizontal filter controls */}
           <div className="hfb-controls-scroll">
 
-            {/* "Filters" Button with Filter Icon */}
+            {/* Mobile-only "Filters" Button for small screens */}
             <button
               type="button"
-              className={`hfb-main-filter-btn ${activeFilterCount > 0 ? "hfb-main-filter-btn--active" : ""}`}
+              className={`hfb-main-filter-btn hfb-main-filter-btn--mobile-only ${activeFilterCount > 0 ? "hfb-main-filter-btn--active" : ""}`}
               onClick={() => setMobileFilterOpen(true)}
               title="All filter options"
             >
@@ -230,7 +235,7 @@ export default function BrowsePage() {
               )}
             </button>
 
-            <div className="hfb-divider" />
+            <div className="hfb-divider hfb-divider--mobile-only" />
 
             {/* 1. All Categories Dropdown */}
             <FilterDropdown
@@ -241,7 +246,19 @@ export default function BrowsePage() {
                 <div className="hfb-menu-content hfb-menu-categories">
                   <div className="hfb-menu-header">Select Category</div>
                   <div className="hfb-options-list">
-                    {CATEGORIES.map((cat) => (
+                    <button
+                      type="button"
+                      className={`hfb-option-item ${selectedCategory === "all" ? "hfb-option-item--selected" : ""}`}
+                      onClick={() => {
+                        setSelectedCategory("all");
+                        close();
+                      }}
+                    >
+                      <span className="hfb-option-name">All Categories</span>
+                      {selectedCategory === "all" && <Check size={14} className="hfb-check" />}
+                    </button>
+
+                    {CATEGORIES.filter((c) => c.id !== "all").map((cat) => (
                       <button
                         key={cat.id}
                         type="button"
@@ -251,7 +268,7 @@ export default function BrowsePage() {
                           close();
                         }}
                       >
-                        <span>{cat.name} {cat.isComponent ? "(Hardware)" : ""}</span>
+                        <span className="hfb-option-name">{cat.name}</span>
                         {selectedCategory === cat.id && <Check size={14} className="hfb-check" />}
                       </button>
                     ))}
@@ -612,7 +629,7 @@ export default function BrowsePage() {
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} {c.isComponent ? "(HW)" : ""}
+                      {c.name}
                     </option>
                   ))}
                 </select>

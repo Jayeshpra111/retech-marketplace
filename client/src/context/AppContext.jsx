@@ -1,25 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { INITIAL_LISTINGS } from '../data/mockData';
-import { api, setAuthToken } from '../services/api';
+import { api, setAuthToken, getAuthToken } from '../services/api';
 
 const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
-  const [listings, setListings] = useState(() => {
-    const saved = localStorage.getItem('retech_listings');
-    return saved ? JSON.parse(saved) : INITIAL_LISTINGS;
-  });
-
-  const [wishlist, setWishlist] = useState(() => {
-    const saved = localStorage.getItem('retech_wishlist');
-    return saved ? JSON.parse(saved) : ['listing-1', 'listing-4'];
-  });
-
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('retech_user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [listings, setListings] = useState([]);
+  const [isListingsLoading, setIsListingsLoading] = useState(true);
+  const [wishlist, setWishlist] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [serverImpact, setServerImpact] = useState(null);
 
   // Theme Mode: 'light' or 'dark'
   const [theme, setTheme] = useState(() => {
@@ -41,345 +33,323 @@ export const AppProvider = ({ children }) => {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  // Chat State
   const [activeChatListing, setActiveChatListing] = useState(null);
-  const [messages, setMessages] = useState([
-    {
-      id: 'm1',
-      sender: 'seller',
-      senderName: 'Aditya Rao',
-      text: 'Hi Jayesh! Thanks for checking out the MacBook Pro M1. Yes, the battery health is still solid at 92%.',
-      time: '10:45 AM'
-    },
-    {
-      id: 'm2',
-      sender: 'buyer',
-      senderName: 'You',
-      text: 'Great! Is the MagSafe cable in clean condition? Any stains on the braided cord?',
-      time: '10:48 AM'
-    },
-    {
-      id: 'm3',
-      sender: 'seller',
-      senderName: 'Aditya Rao',
-      text: 'Spotless! I kept it bundled in the box since I mostly used an Anker dock. Would you like to inspect in Indiranagar or opt for Escrow Delivery?',
-      time: '10:50 AM'
+  const [messages, setMessages] = useState([]);
+
+  // Normalize user payload
+  const formatUser = (u) => {
+    if (!u) return null;
+    const avatarUrl = typeof u.avatar === 'string' ? u.avatar : u.avatar?.url || '';
+    return {
+      id: u._id || u.id,
+      _id: u._id || u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role || 'user',
+      avatar: avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      phone: u.phone || '',
+      sharePhone: u.sharePhone || false,
+      address: u.address || {},
+      city: u.address?.city || 'Bangalore, KA',
+      verified: u.isEmailVerified,
+      isEmailVerified: u.isEmailVerified,
+      totalKgDiverted: u.totalImpactKg || 0,
+      totalCo2Saved: u.totalCo2SavedKg || 0,
+      memberSince: u.createdAt
+        ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        : 'Member',
+      rating: u.ratingAvg || 5.0,
+      ratingAvg: u.ratingAvg || 5.0,
+      ratingCount: u.ratingCount || 0,
+    };
+  };
+
+  // Normalize listing payload for client components
+  const normalizeListing = (l) => {
+    const sellerAvatar =
+      typeof l.seller?.avatar === 'string'
+        ? l.seller.avatar
+        : l.seller?.avatar?.url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+
+    return {
+      id: l._id || l.id,
+      _id: l._id || l.id,
+      title: l.title,
+      slug: l.slug,
+      category: l.category?.slug || l.category?.name || 'electronics',
+      categoryData: l.category,
+      price: l.price,
+      originalPrice: l.originalPrice || Math.round(l.price * 1.35),
+      condition: l.condition,
+      seller: {
+        id: l.seller?._id || l.seller?.id,
+        _id: l.seller?._id || l.seller?.id,
+        name: l.seller?.name || 'Verified Seller',
+        avatar: sellerAvatar,
+        rating: l.seller?.ratingAvg || 4.9,
+        ratingAvg: l.seller?.ratingAvg || 4.9,
+        ratingCount: l.seller?.ratingCount || 0,
+        verified: l.seller?.isEmailVerified ?? true,
+      },
+      sellerRating: l.seller?.ratingAvg || 4.9,
+      sellerVerified: l.seller?.isEmailVerified ?? true,
+      city: typeof l.location === 'string' ? l.location : `${l.location?.city || 'Bangalore'}, ${l.location?.state || 'KA'}`,
+      location: typeof l.location === 'string' ? l.location : `${l.location?.city || 'Bangalore'}, ${l.location?.state || 'KA'}`,
+      isNegotiable: l.negotiable ?? false,
+      images:
+        l.images?.length > 0
+          ? l.images.map((i) => (typeof i === 'string' ? i : i.url || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600'))
+          : ['https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600'],
+      specs: l.specs || {},
+      verified: true,
+      status: l.status || 'active',
+      impactKg: l.impactKg || 1.5,
+      co2SavedKg: l.co2SavedKg || 65,
+      warrantyLeftMonths: l.warrantyLeftMonths || 0,
+      hasBill: l.hasBill ?? true,
+      description: l.description,
+      brand: l.brand || '',
+      model: l.model || '',
+      createdAt: l.createdAt,
+    };
+  };
+
+  // Load public listings
+  const fetchListings = useCallback(async () => {
+    try {
+      setIsListingsLoading(true);
+      const res = await api.listings.getAll({ limit: 50 });
+      if (res?.data) {
+        setListings(res.data.map(normalizeListing));
+      }
+    } catch (err) {
+      console.warn('Could not load listings:', err.message);
+    } finally {
+      setIsListingsLoading(false);
     }
-  ]);
+  }, []);
 
-  const [orders, setOrders] = useState([
-    {
-      id: 'ORD-7291',
-      listingId: 'listing-2',
-      title: 'NVIDIA GeForce RTX 3080 Founders Edition 10GB',
-      amount: 38500,
-      sellerName: 'Rohan Sharma',
-      status: 'shipped',
-      date: '2026-09-28',
-      trackingNumber: 'DELHIVERY-98213812',
-      protectionStatus: 'Escrow Held (Funds release on your delivery confirmation)',
-      image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=300&auto=format&fit=crop&q=80',
-      co2Saved: 85
+  // Fetch initial impact stats
+  const fetchImpact = useCallback(async () => {
+    try {
+      const res = await api.impact.getOverview();
+      if (res?.data) setServerImpact(res.data);
+    } catch {
+      // Ignore
     }
-  ]);
+  }, []);
 
-  const [serverImpact, setServerImpact] = useState(null);
-
-  // Sync with backend on startup
+  // Initialize Auth & App Data on mount
   useEffect(() => {
-    const initAppData = async () => {
-      // 1. Fetch current user if token exists
-      const token = localStorage.getItem('retech_token');
+    const initAuth = async () => {
+      const token = getAuthToken();
       if (token) {
         try {
           const res = await api.auth.getMe();
           if (res?.data) {
-            const u = res.data;
-            const avatarUrl = typeof u.avatar === 'string' ? u.avatar : (u.avatar?.url || '');
-            setUser({
-              id: u._id || u.id,
-              name: u.name,
-              email: u.email,
-              avatar: avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-              role: u.role || 'user',
-              city: u.address?.city || 'Bangalore, KA',
-              verified: u.isEmailVerified,
-              totalKgDiverted: u.totalImpactKg || 0,
-              totalCo2Saved: u.totalCo2SavedKg || 0,
-              memberSince: new Date(u.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-              rating: u.ratingAvg || 5.0,
-            });
+            setUser(formatUser(res.data));
+            // Load user's wishlist and orders
+            try {
+              const [wlRes, ordersRes] = await Promise.all([
+                api.listings.getWishlist(),
+                api.orders.getMyOrders({ limit: 20 }),
+              ]);
+              if (wlRes?.data) {
+                setWishlist(wlRes.data.map((item) => (typeof item === 'string' ? item : item._id || item.id)));
+              }
+              if (ordersRes?.data) {
+                setOrders(ordersRes.data);
+              }
+            } catch {
+              // Ignore secondary failures
+            }
           }
         } catch {
           // Token expired or invalid
           setAuthToken(null);
+          setUser(null);
         }
       }
-
-      // 2. Fetch live listings
-      try {
-        const res = await api.listings.getAll({ limit: 50 });
-        if (res?.data && res.data.length > 0) {
-          const normalized = res.data.map((l) => {
-            const sellerAvatar = typeof l.seller?.avatar === 'string'
-              ? l.seller.avatar
-              : (l.seller?.avatar?.url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150');
-
-            return {
-              id: l._id || l.id,
-              title: l.title,
-              category: l.category?.slug || l.category?.name || 'Electronics',
-              price: l.price,
-              originalPrice: l.originalPrice || l.price * 1.4,
-              condition: l.condition,
-              seller: {
-                id: l.seller?._id || l.seller?.id,
-                name: l.seller?.name || (typeof l.seller === 'string' ? l.seller : 'Seller'),
-                avatar: sellerAvatar,
-                rating: l.seller?.ratingAvg || 4.8,
-                verified: l.seller?.isEmailVerified ?? true,
-              },
-              sellerRating: l.seller?.ratingAvg || 4.8,
-              sellerVerified: l.seller?.isEmailVerified ?? true,
-              city: typeof l.location === 'string'
-                ? l.location
-                : `${l.location?.city || 'Bangalore'}, ${l.location?.state || 'KA'}`,
-              location: `${l.location?.city || 'Bangalore'}, ${l.location?.state || 'KA'}`,
-              isNegotiable: l.negotiable ?? false,
-              images: l.images?.length > 0
-                ? l.images.map((i) => (typeof i === 'string' ? i : i.url || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600'))
-                : ['https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600'],
-              specs: l.specs || {},
-              verified: true,
-              featured: false,
-              impactKg: l.impactKg || 1.5,
-              co2SavedKg: l.co2SavedKg || 65,
-              warrantyLeftMonths: l.warrantyLeftMonths || 0,
-              hasBill: l.hasBill ?? true,
-              description: l.description,
-              brand: l.brand,
-              model: l.model,
-            };
-          });
-
-          // Merge backend listings with mock catalog so user has plenty of items
-          setListings((prev) => {
-            const existingIds = new Set(normalized.map((n) => n.id));
-            const mockKeep = prev.filter((p) => !existingIds.has(p.id));
-            return [...normalized, ...mockKeep];
-          });
-        }
-      } catch (err) {
-        console.warn('Backend listings fetch skipped:', err.message);
-      }
-
-      // 3. Fetch impact metrics
-      try {
-        const res = await api.impact.getOverview();
-        if (res?.data) {
-          setServerImpact(res.data);
-        }
-      } catch {
-        // Fallback to local
-      }
+      setIsAuthLoading(false);
     };
 
-    initAppData();
-  }, []);
+    initAuth();
+    fetchListings();
+    fetchImpact();
+  }, [fetchListings, fetchImpact]);
 
-  // Save changes locally
-  useEffect(() => {
-    localStorage.setItem('retech_listings', JSON.stringify(listings));
-  }, [listings]);
-
-  useEffect(() => {
-    localStorage.setItem('retech_wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('retech_user', JSON.stringify(user));
-    }
-  }, [user]);
-
-  // Auth methods
+  // Auth: Login
   const login = async (email, password) => {
-    try {
-      const res = await api.auth.login({ email, password });
-      if (res?.data?.accessToken) {
-        setAuthToken(res.data.accessToken);
-        const u = res.data.user;
-        const userData = {
-          id: u._id || u.id,
-          name: u.name,
-          email: u.email,
-          role: u.role || 'user',
-          avatar: (typeof u.avatar === 'string' ? u.avatar : u.avatar?.url) || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-          city: u.address?.city || 'Bangalore, KA',
-          verified: u.isEmailVerified,
-          totalKgDiverted: u.totalImpactKg || 0,
-          totalCo2Saved: u.totalCo2SavedKg || 0,
-          memberSince: new Date(u.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-          rating: u.ratingAvg || 5.0,
-        };
-        setUser(userData);
-        return userData;
-      }
-    } catch (err) {
-      console.warn('API login fallback:', err.message);
-    }
+    const res = await api.auth.login({ email, password });
+    if (res?.data?.accessToken) {
+      setAuthToken(res.data.accessToken);
+      const formatted = formatUser(res.data.user);
+      setUser(formatted);
 
-    // Demo fallback for test credentials or offline mode
-    if (email) {
-      const fallbackUser = {
-        id: 'user-current',
-        name: email === 'admin@retechmarket.com' ? 'Admin Jayesh' : email.split('@')[0],
-        email: email,
-        role: email === 'admin@retechmarket.com' ? 'admin' : 'user',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-        city: 'Bangalore, KA',
-        verified: true,
-        totalKgDiverted: 14.8,
-        totalCo2Saved: 342,
-        memberSince: 'January 2024',
-        rating: 4.95,
-      };
-      setUser(fallbackUser);
-      return fallbackUser;
+      // Load user's wishlist and orders upon successful login
+      try {
+        const [wlRes, ordersRes] = await Promise.all([
+          api.listings.getWishlist(),
+          api.orders.getMyOrders({ limit: 20 }),
+        ]);
+        if (wlRes?.data) {
+          setWishlist(wlRes.data.map((item) => (typeof item === 'string' ? item : item._id || item.id)));
+        }
+        if (ordersRes?.data) {
+          setOrders(ordersRes.data);
+        }
+      } catch {
+        // Non-fatal
+      }
+
+      toast.success(`Welcome back, ${formatted.name}!`);
+      return formatted;
     }
-    throw new Error('Login failed');
+    throw new Error('Login failed: invalid response from server.');
   };
 
+  // Auth: Register
   const register = async (name, email, password, country) => {
     const res = await api.auth.register({ name, email, password, country });
+    toast.success('Registration successful! Please check your email to verify your account.');
     return res;
   };
 
-  const logout = () => {
-    setAuthToken(null);
-    localStorage.removeItem('retech_user');
-    setUser(null);
-    toast.success('Logged out successfully');
-  };
-
-  const toggleWishlist = (id) => {
-    setWishlist(prev => {
-      const exists = prev.includes(id);
-      if (exists) {
-        toast('Removed from saved wishlist', { icon: '🗑️' });
-        return prev.filter(item => item !== id);
-      } else {
-        toast.success('Added to saved wishlist');
-        return [...prev, id];
-      }
-    });
-
-    // Also attempt backend wishlist sync if logged in
-    api.listings.toggleWishlist(id).catch(() => {});
-  };
-
-  const addListing = async (newListing) => {
-    const categoryMap = {
-      psus: 'power-supplies',
-      gaming: 'gaming',
-      gpus: 'gpus',
-      ram: 'ram',
-      storage: 'storage',
-      motherboards: 'motherboards',
-      mobiles: 'mobiles',
-      laptops: 'laptops',
-      tablets: 'tablets',
-      audio: 'audio',
-      cameras: 'cameras',
-    };
-    const mappedCategory = categoryMap[newListing.category] || newListing.category || 'other';
-
-    const safeDescription = (newListing.conditionDetails && newListing.conditionDetails.length >= 20)
-      ? newListing.conditionDetails
-      : `${newListing.title} - ${newListing.condition || 'good'} condition device listed on ReTech Market.`;
-
-    let createdId = newListing.id;
-
-    // Try posting to backend if logged in
+  // Auth: Logout
+  const logout = async () => {
     try {
-      const res = await api.listings.create({
-        title: newListing.title,
-        description: safeDescription,
-        category: mappedCategory,
-        price: Number(newListing.price),
-        condition: newListing.condition || 'good',
-        brand: newListing.brand || '',
-        model: newListing.model || '',
-        images: newListing.images || [],
-        location: {
-          city: newListing.city || newListing.location?.split(',')[0]?.trim() || 'Bangalore',
-          state: 'KA',
-        },
-      });
-      if (res?.data?._id) {
-        createdId = res.data._id;
-      }
-    } catch (err) {
-      console.warn('Backend listing sync fallback:', err.message);
+      await api.auth.logout();
+    } catch {
+      // Ignore network errors on logout
+    }
+    setAuthToken(null);
+    setUser(null);
+    setWishlist([]);
+    setOrders([]);
+    toast.success('Logged out successfully.');
+  };
+
+  // Wishlist Toggle
+  const toggleWishlist = async (id) => {
+    if (!user) {
+      toast.error('Please log in to save items to your wishlist.');
+      return;
     }
 
-    const listingToSave = { ...newListing, id: createdId };
-    setListings(prev => [listingToSave, ...prev]);
-    toast.success('Listing published! E-waste diverted ~' + (newListing.impactKg || 1) + ' kg');
+    const isSaved = wishlist.includes(id);
+    setWishlist((prev) => (isSaved ? prev.filter((item) => item !== id) : [...prev, id]));
+
+    try {
+      await api.listings.toggleWishlist(id);
+      toast.success(isSaved ? 'Removed from wishlist' : 'Added to wishlist');
+    } catch (err) {
+      // Revert on failure
+      setWishlist((prev) => (isSaved ? [...prev, id] : prev.filter((item) => item !== id)));
+      toast.error(err.message || 'Could not update wishlist.');
+    }
   };
 
-  const addOrder = async (newOrder) => {
-    setOrders(prev => [newOrder, ...prev]);
-    toast.success('Order placed with 100% Escrow Protection!');
+  // Add Listing (wired to real API)
+  const addListing = async (formDataOrObj) => {
+    try {
+      const res = await api.listings.create(formDataOrObj);
+      toast.success('Listing submitted! It is now pending admin review before going live.');
+      fetchListings();
+      return res.data;
+    } catch (err) {
+      toast.error(err.message || 'Failed to create listing.');
+      throw err;
+    }
   };
 
-  const sendMessage = (text) => {
+  // Add Order / Place Order
+  const addOrder = async (orderData) => {
+    try {
+      const res = await api.orders.create(orderData);
+      setOrders((prev) => [res.data, ...prev]);
+      return res.data;
+    } catch (err) {
+      toast.error(err.message || 'Failed to place order.');
+      throw err;
+    }
+  };
+
+  // Send message
+  const sendMessage = async (text) => {
+    if (!user) {
+      toast.error('Please log in to send messages.');
+      return;
+    }
     const newMsg = {
       id: `m-${Date.now()}`,
       sender: 'buyer',
-      senderName: user?.name || 'You',
+      senderName: user.name,
       text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
-    setMessages(prev => [...prev, newMsg]);
-    toast.success('Inquiry sent to seller');
+    setMessages((prev) => [...prev, newMsg]);
+
+    if (activeChatListing) {
+      try {
+        // Create or find conversation then send
+        const sellerId = activeChatListing.seller?.id || activeChatListing.seller?._id;
+        const convRes = await api.chat.createConversation(sellerId, activeChatListing.id || activeChatListing._id);
+        if (convRes?.data?._id) {
+          await api.chat.sendMessage(convRes.data._id, text);
+        }
+      } catch (err) {
+        console.warn('Realtime chat sync:', err.message);
+      }
+    }
+    toast.success('Message sent to seller');
   };
 
-  // Platform-wide impact metrics
-  const calculatedEwaste = listings.reduce((sum, item) => sum + (item.impactKg || 0), 4820);
-  const calculatedCo2 = listings.reduce((sum, item) => sum + (item.co2SavedKg || 0), 18450);
+  // Refresh user profile
+  const refreshUser = async () => {
+    if (!getAuthToken()) return;
+    try {
+      const res = await api.auth.getMe();
+      if (res?.data) setUser(formatUser(res.data));
+    } catch {
+      // Ignore
+    }
+  };
 
-  const totalEwasteDiverted = serverImpact?.totalImpactKg
-    ? serverImpact.totalImpactKg + calculatedEwaste
-    : calculatedEwaste;
-
-  const totalCo2Saved = serverImpact?.totalCo2SavedKg
-    ? serverImpact.totalCo2SavedKg + calculatedCo2
-    : calculatedCo2;
+  // Platform impact calculations
+  const totalEwasteDiverted = serverImpact?.totalImpactKg || listings.reduce((sum, item) => sum + (item.impactKg || 0), 0);
+  const totalCo2Saved = serverImpact?.totalCo2SavedKg || listings.reduce((sum, item) => sum + (item.co2SavedKg || 0), 0);
 
   return (
-    <AppContext.Provider value={{
-      listings,
-      wishlist,
-      user,
-      login,
-      register,
-      logout,
-      activeChatListing,
-      setActiveChatListing,
-      messages,
-      sendMessage,
-      orders,
-      addOrder,
-      toggleWishlist,
-      addListing,
-      totalEwasteDiverted: Number(totalEwasteDiverted.toFixed(1)),
-      totalCo2Saved: Number(totalCo2Saved.toFixed(0)),
-      theme,
-      toggleTheme
-    }}>
+    <AppContext.Provider
+      value={{
+        listings,
+        isListingsLoading,
+        fetchListings,
+        wishlist,
+        user,
+        isAuthLoading,
+        login,
+        register,
+        logout,
+        refreshUser,
+        activeChatListing,
+        setActiveChatListing,
+        messages,
+        sendMessage,
+        orders,
+        addOrder,
+        toggleWishlist,
+        addListing,
+        totalEwasteDiverted: Number(totalEwasteDiverted.toFixed(1)),
+        totalCo2Saved: Number(totalCo2Saved.toFixed(0)),
+        theme,
+        toggleTheme,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

@@ -32,8 +32,8 @@ const parseAccessories = (val) => {
 const parseBoolean = (val) => val === 'true' || val === true || val === 1 || val === '1';
 
 const createListingSchema = z.object({
-  title: z.string().min(5, 'Title too short').max(120),
-  description: z.string().min(20, 'Description too short').max(3000),
+  title: z.string().min(2, 'Title must be at least 2 characters').max(120),
+  description: z.string().min(5, 'Description must be at least 5 characters').max(3000),
   category: z.string().min(1, 'Category is required'),
   brand: z.string().max(60).default(''),
   model: z.string().max(60).default(''),
@@ -70,6 +70,7 @@ const listingQuerySchema = z.object({
   maxPrice: z.coerce.number().optional(),
   condition: conditionEnum.optional(),
   city: z.string().optional(),
+  isComponent: z.preprocess(parseBoolean, z.boolean()).optional(),
   sort: z.enum(['newest', 'price_asc', 'price_desc', 'popular']).default('newest'),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(12),

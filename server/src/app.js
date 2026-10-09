@@ -30,13 +30,23 @@ const apiRoutes = require('./routes/index');
 
 const app = express();
 
+// ── Reverse proxy support ─────────────────────────────────────────────────────
+app.set('trust proxy', 1);
+
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use(helmet());
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
+const allowedOrigins = CLIENT_URL.split(',').map((u) => u.trim()).filter(Boolean);
+
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS policy does not allow access from origin: ${origin}`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   })

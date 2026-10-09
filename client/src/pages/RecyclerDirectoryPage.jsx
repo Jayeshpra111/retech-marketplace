@@ -7,32 +7,36 @@ import {
   Search, 
   AlertTriangle,
 } from 'lucide-react';
-import { MOCK_RECYCLERS } from '../data/mockData';
 import api from '../services/api';
 import '../styles/pages.css';
 
 export default function RecyclerDirectoryPage() {
   const [selectedCity, setSelectedCity] = useState('all');
   const [searchFilter, setSearchFilter] = useState('');
-  const [recyclers, setRecyclers] = useState(MOCK_RECYCLERS);
+  const [recyclers, setRecyclers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   React.useEffect(() => {
-    api.recyclers.getAll()
+    setIsLoading(true);
+    api.recyclers
+      .getAll()
       .then((res) => {
-        if (res?.data && res.data.length > 0) {
+        if (res?.data) {
           setRecyclers(res.data);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const filteredRecyclers = recyclers.filter(r => {
-    if (selectedCity !== 'all' && !r.city.toLowerCase().includes(selectedCity.toLowerCase())) {
+  const filteredRecyclers = recyclers.filter((r) => {
+    const centerCity = r.address?.city || r.city || '';
+    if (selectedCity !== 'all' && !centerCity.toLowerCase().includes(selectedCity.toLowerCase())) {
       return false;
     }
     if (searchFilter.trim()) {
       const q = searchFilter.toLowerCase();
-      return r.name.toLowerCase().includes(q) || (r.acceptedItems || []).some(i => i.toLowerCase().includes(q));
+      return r.name?.toLowerCase().includes(q) || (r.acceptedItems || []).some((i) => i.toLowerCase().includes(q));
     }
     return true;
   });
@@ -94,8 +98,8 @@ export default function RecyclerDirectoryPage() {
 
       {/* Recyclers Grid */}
       <div className="recycler-grid">
-        {filteredRecyclers.map((rec) => (
-          <div key={rec.id} className="recycler-card">
+        {filteredRecyclers.map((rec, i) => (
+          <div key={rec._id || rec.id || `rec-${i}`} className="recycler-card">
             <div className="recycler-card__details">
               <div className="recycler-card__labels">
                 <span className="recycler-card__city">
@@ -115,11 +119,11 @@ export default function RecyclerDirectoryPage() {
               <div className="recycler-card__contact">
                 <p className="recycler-card__contact-row">
                   <MapPin className="recycler-icon recycler-icon--contact" />
-                  <span>{rec.address}</span>
+                  <span>{typeof rec.address === 'string' ? rec.address : `${rec.address?.line1 || ''}, ${rec.address?.city || ''}`}</span>
                 </p>
                 <p className="recycler-card__contact-row">
                   <Phone className="recycler-icon recycler-icon--contact" />
-                  <span className="recycler-card__phone">{rec.phone}</span>
+                  <span className="recycler-card__phone">{rec.phone || 'Contact on site'}</span>
                 </p>
               </div>
 
@@ -129,7 +133,7 @@ export default function RecyclerDirectoryPage() {
                   Verified Certifications
                 </span>
                 <div className="recycler-card__tags">
-                  {rec.certifications.map((cert, i) => (
+                  {(Array.isArray(rec.certifications) ? rec.certifications : rec.certification ? rec.certification.split(',').map((c) => c.trim()) : ['CPCB Authorized']).map((cert, i) => (
                     <span key={i} className="recycler-card__certification">
                       <ShieldCheck className="recycler-icon recycler-icon--certified" />
                       {cert}

@@ -14,9 +14,10 @@ const validate = (schema, { query = false } = {}) =>
         field: e.path.join('.'),
         message: e.message,
       }));
+      const detailedMessage = errors.map((e) => `${e.field ? `${e.field}: ` : ''}${e.message}`).join(', ');
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: detailedMessage || 'Validation failed',
         errors,
       });
     }

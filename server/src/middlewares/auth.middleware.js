@@ -53,4 +53,6 @@ const optionalAuth = asyncHandler(async (req, res, next) => {
   next();
 });
 
-module.exports = { protect, restrictTo, optionalAuth };
+const adminOnly = restrictTo('admin');
+
+module.exports = { protect, restrictTo, optionalAuth, adminOnly };

@@ -26,8 +26,18 @@ const userSchema = new mongoose.Schema(
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
     isBanned: { type: Boolean, default: false },
-    // Hashed refresh token (rotated on every refresh)
+    // Hashed refresh tokens (multi-device support)
     refreshTokenHash: { type: String, select: false },
+    refreshTokens: {
+      type: [
+        {
+          tokenHash: { type: String, required: true },
+          createdAt: { type: Date, default: Date.now },
+        },
+      ],
+      select: false,
+      default: [],
+    },
     // Ratings
     ratingAvg: { type: Number, default: 0, min: 0, max: 5 },
     ratingCount: { type: Number, default: 0 },

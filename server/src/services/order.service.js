@@ -1,33 +1,88 @@
 // src/services/order.service.js
 const Order = require('../models/Order.model');
 const Listing = require('../models/Listing.model');
+const Offer = require('../models/Offer.model');
 const AppError = require('../utils/AppError');
 const { sendOrderEmail } = require('../utils/sendEmail');
 const { AUTO_CONFIRM_DAYS, PLATFORM_COMMISSION_PERCENT } = require('../config/env');
 
-const createOrder = async (buyerId, { listingId, shippingAddress, paymentMethod }) => {
+const ALLOWED_TRANSITIONS = {
+  pending: {
+    paid: ['system'],
+    confirmed: ['seller', 'admin', 'system'], // system for COD orders
+    cancelled: ['buyer', 'seller', 'admin'],
+  },
+  paid: {
+    confirmed: ['seller', 'admin'],
+    cancelled: ['buyer', 'seller', 'admin'],
+  },
+  confirmed: {
+    shipped: ['seller', 'admin'],
+    cancelled: ['seller', 'admin'],
+  },
+  shipped: {
+    delivered: ['buyer', 'admin', 'system'],
+    disputed: ['buyer'],
+  },
+  delivered: {
+    completed: ['buyer', 'admin', 'system'],
+    disputed: ['buyer'],
+  },
+  disputed: {
+    completed: ['admin'],
+    refunded: ['admin'],
+    cancelled: ['admin'],
+  },
+  completed: {},
+  cancelled: {},
+  refunded: {},
+};
+
+const createOrder = async (buyerId, { listingId, shippingAddress, paymentMethod, offerId }) => {
   const listing = await Listing.findById(listingId).populate('seller', 'email name');
   if (!listing) throw new AppError('Listing not found.', 404);
   if (listing.status !== 'active') throw new AppError('This listing is no longer available.', 400);
-  if (listing.seller._id.toString() === buyerId.toString())
+  if (listing.seller._id.toString() === buyerId.toString()) {
     throw new AppError('You cannot buy your own listing.', 400);
+  }
+
+  let finalPrice = listing.price;
+
+  // If an accepted offer exists, enforce the agreed price
+  if (offerId) {
+    const offer = await Offer.findById(offerId);
+    if (!offer) throw new AppError('Offer not found.', 404);
+    if (offer.buyer.toString() !== buyerId.toString()) {
+      throw new AppError('This offer does not belong to your account.', 403);
+    }
+    if (offer.listing.toString() !== listingId.toString()) {
+      throw new AppError('Offer is not for this listing.', 400);
+    }
+    if (offer.status !== 'accepted') {
+      throw new AppError('Only accepted offers can be used during checkout.', 400);
+    }
+    if (offer.expiresAt && new Date(offer.expiresAt) < new Date()) {
+      throw new AppError('The accepted offer has expired.', 400);
+    }
+    finalPrice = offer.counterAmount || offer.amount;
+  }
 
   // Reserve listing atomically
   const updated = await Listing.findOneAndUpdate(
     { _id: listingId, status: 'active' },
     { status: 'reserved' },
-    { new: true }
+    { returnDocument: 'after' }
   );
   if (!updated) throw new AppError('Listing was just taken. Please try another.', 409);
 
-  const commission = (listing.price * PLATFORM_COMMISSION_PERCENT) / 100;
+  const commission = (finalPrice * PLATFORM_COMMISSION_PERCENT) / 100;
   const initialStatus = paymentMethod === 'cod' ? 'confirmed' : 'pending';
 
   const order = await Order.create({
     buyer: buyerId,
     seller: listing.seller._id,
     listing: listingId,
-    priceAtPurchase: listing.price,
+    priceAtPurchase: finalPrice,
     shippingAddress,
     paymentMethod,
     paymentStatus: 'unpaid',
@@ -35,7 +90,7 @@ const createOrder = async (buyerId, { listingId, shippingAddress, paymentMethod 
     impactKg: listing.impactKg || 0,
     co2SavedKg: listing.co2SavedKg || 0,
     orderStatus: initialStatus,
-    statusHistory: [{ status: initialStatus }],
+    statusHistory: [{ status: initialStatus, at: new Date() }],
   });
 
   return order;
@@ -85,7 +140,7 @@ const getOrderById = async (orderId, userId, role) => {
   return order;
 };
 
-// Generic status transition helper
+// Strict state machine status transition
 const transitionOrder = async (orderId, userId, role, newStatus, extraData = {}) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError('Order not found.', 404);
@@ -95,54 +150,84 @@ const transitionOrder = async (orderId, userId, role, newStatus, extraData = {})
   const isAdmin = role === 'admin';
   const isSystem = extraData && extraData.isSystem === true;
 
-  const allowed = {
-    paid: isBuyer || isAdmin || isSystem,
-    confirmed: isSeller || isAdmin || isSystem,
-    shipped: isSeller || isAdmin,
-    delivered: isBuyer || isAdmin || isSystem,
-    completed: isBuyer || isAdmin || isSystem,
-    cancelled: isBuyer || isSeller || isAdmin || isSystem,
-    refunded: isAdmin || isSystem,
-    disputed: isBuyer,
+  const currentStatus = order.orderStatus;
+  const allowedRolesForTransition = ALLOWED_TRANSITIONS[currentStatus]?.[newStatus];
+
+  if (!allowedRolesForTransition) {
+    throw new AppError(
+      `Invalid order status transition from "${currentStatus}" to "${newStatus}".`,
+      400
+    );
+  }
+
+  const hasPermission =
+    (isAdmin && allowedRolesForTransition.includes('admin')) ||
+    (isSystem && allowedRolesForTransition.includes('system')) ||
+    (isSeller && allowedRolesForTransition.includes('seller')) ||
+    (isBuyer && allowedRolesForTransition.includes('buyer'));
+
+  if (!hasPermission) {
+    throw new AppError(
+      `You do not have permission to transition order from "${currentStatus}" to "${newStatus}".`,
+      403
+    );
+  }
+
+  // Build atomic update payload
+  const updatePayload = {
+    $set: { orderStatus: newStatus },
+    $push: { statusHistory: { status: newStatus, at: new Date() } },
   };
 
-  if (!allowed[newStatus]) throw new AppError('You cannot perform this status change.', 403);
-
-  order.orderStatus = newStatus;
-  order.statusHistory.push({ status: newStatus });
-
   if (newStatus === 'paid') {
-    order.paymentStatus = 'held';
-    if (extraData.gatewayPaymentId) order.gatewayPaymentId = extraData.gatewayPaymentId;
-    if (extraData.gatewayOrderId) order.gatewayOrderId = extraData.gatewayOrderId;
+    updatePayload.$set.paymentStatus = 'held';
+    if (extraData.gatewayPaymentId) updatePayload.$set.gatewayPaymentId = extraData.gatewayPaymentId;
+    if (extraData.gatewayOrderId) updatePayload.$set.gatewayOrderId = extraData.gatewayOrderId;
   }
+
   if (newStatus === 'shipped' && extraData.trackingInfo) {
-    order.trackingInfo = extraData.trackingInfo;
+    updatePayload.$set.trackingInfo = extraData.trackingInfo;
   }
+
   if (newStatus === 'delivered') {
     const autoAt = new Date();
     autoAt.setDate(autoAt.getDate() + AUTO_CONFIRM_DAYS);
-    order.autoConfirmAt = autoAt;
+    updatePayload.$set.autoConfirmAt = autoAt;
   }
+
   if (newStatus === 'completed') {
-    order.paymentStatus = 'released';
-    await Listing.findByIdAndUpdate(order.listing, { status: 'sold' });
+    updatePayload.$set.paymentStatus = 'released';
   }
+
   if (newStatus === 'cancelled') {
-    if (order.paymentStatus === 'unpaid') {
-      await Listing.findByIdAndUpdate(order.listing, { status: 'active' });
-    } else if (order.paymentStatus === 'held') {
-      order.paymentStatus = 'refunded';
-      await Listing.findByIdAndUpdate(order.listing, { status: 'active' });
+    if (order.paymentStatus === 'held') {
+      updatePayload.$set.paymentStatus = 'refunded';
     }
   }
+
   if (newStatus === 'refunded') {
-    order.paymentStatus = 'refunded';
+    updatePayload.$set.paymentStatus = 'refunded';
+  }
+
+  // Atomic update with optimistic lock on current orderStatus
+  const updatedOrder = await Order.findOneAndUpdate(
+    { _id: orderId, orderStatus: currentStatus },
+    updatePayload,
+    { returnDocument: 'after' }
+  );
+
+  if (!updatedOrder) {
+    throw new AppError('Order state changed concurrently. Please refresh and try again.', 409);
+  }
+
+  // Sync listing inventory state
+  if (newStatus === 'completed') {
+    await Listing.findByIdAndUpdate(order.listing, { status: 'sold' });
+  } else if (newStatus === 'cancelled' || newStatus === 'refunded') {
     await Listing.findByIdAndUpdate(order.listing, { status: 'active' });
   }
 
-  await order.save();
-  return order;
+  return updatedOrder;
 };
 
 module.exports = { createOrder, getMyOrders, getSellingOrders, getOrderById, transitionOrder };

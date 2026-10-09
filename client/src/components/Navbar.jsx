@@ -123,20 +123,6 @@ export default function Navbar() {
               Browse All
             </Link>
             <Link 
-              to="/browse?isComponent=true" 
-              className="site-header__nav-link site-header__nav-link--components"
-            >
-              <Cpu className="site-header__icon site-header__icon--blue" />
-              <span>PC Components</span>
-            </Link>
-            <Link 
-              to="/browse?condition=for_parts" 
-              className="site-header__nav-link site-header__nav-link--salvage"
-            >
-              <Layers className="site-header__icon site-header__icon--purple" />
-              <span>For Parts & Salvage</span>
-            </Link>
-            <Link 
               to="/recycle" 
               className="site-header__nav-link site-header__nav-link--recyclers"
             >
@@ -176,17 +162,14 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Chat toggle */}
-            <button
-              onClick={openSampleChat}
+            {/* Messages */}
+            <Link
+              to="/messages"
               className="site-header__action"
-              title="Messages / Inquiries"
+              title="Messages & Chat"
             >
               <MessageSquare className="site-header__action-icon" />
-              <span className="site-header__count site-header__count--messages">
-                1
-              </span>
-            </button>
+            </Link>
 
             {/* Theme Toggle (Light / Dark Mode) */}
             <button
@@ -280,6 +263,14 @@ export default function Navbar() {
                       >
                         <Clock className="site-header__profile-link-icon" />
                         <span>Orders & Escrow</span>
+                      </Link>
+                      <Link
+                        to="/messages"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="site-header__profile-link"
+                      >
+                        <MessageSquare className="site-header__profile-link-icon" />
+                        <span>Messages & Inbox</span>
                       </Link>
                       <Link
                         to="/dashboard?tab=wishlist"
@@ -383,25 +374,18 @@ export default function Navbar() {
               Browse All Electronics
             </Link>
             <Link 
-              to="/browse?isComponent=true" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="site-header__mobile-link site-header__mobile-link--blue"
-            >
-              PC Components Marketplace (RAM, GPUs, SSDs)
-            </Link>
-            <Link 
-              to="/browse?condition=for_parts" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="site-header__mobile-link site-header__mobile-link--purple"
-            >
-              Sell & Buy For Parts (Salvage & Repair)
-            </Link>
-            <Link 
               to="/dashboard" 
               onClick={() => setMobileMenuOpen(false)}
               className="site-header__mobile-link"
             >
               Seller Dashboard & Orders
+            </Link>
+            <Link 
+              to="/messages" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="site-header__mobile-link"
+            >
+              Messages & Chat
             </Link>
             <Link 
               to="/impact" 

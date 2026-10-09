@@ -13,6 +13,7 @@ router.use('/reviews', require('./review.routes'));
 router.use('/reports', require('./report.routes'));
 router.use('/impact', require('./impact.routes'));
 router.use('/recycling-centers', require('./recycler.routes'));
+router.use('/disputes', require('./dispute.routes'));
 router.use('/admin', require('./admin.routes'));
 
 // Health check

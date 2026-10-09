@@ -46,8 +46,6 @@ export default function Footer() {
               <li><Link to="/browse" className="site-footer__link">All Electronics</Link></li>
               <li><Link to="/browse?category=laptops" className="site-footer__link">Laptops & MacBooks</Link></li>
               <li><Link to="/browse?category=mobiles" className="site-footer__link">Smartphones</Link></li>
-              <li><Link to="/browse?isComponent=true" className="site-footer__link site-footer__link--inline"><Cpu className="site-footer__link-icon site-footer__link-icon--blue" /> PC Components</Link></li>
-              <li><Link to="/browse?condition=for_parts" className="site-footer__link site-footer__link--purple">Sell & Buy For Parts</Link></li>
               <li><Link to="/sell" className="site-footer__link site-footer__link--eco">Post a Free Listing</Link></li>
             </ul>
           </div>
@@ -59,8 +57,8 @@ export default function Footer() {
               <li><Link to="/impact" className="site-footer__link">Impact Methodology</Link></li>
               <li><Link to="/recycle" className="site-footer__link">Authorized Recycler Hubs</Link></li>
               <li><a href="#data-wipe" onClick={(e) => { e.preventDefault(); alert("ReTech Data Wipe Guide:\n1. Backup personal files to external storage\n2. Sign out of iCloud, Google Account, and Steam\n3. Perform full cryptographic factory reset\n4. Remove physical SIM cards and MicroSD cards"); }} className="site-footer__link">Data Wipe Checklist</a></li>
-              <li><span className="site-footer__trust"><ShieldCheck className="site-footer__trust-icon" /> Escrow Buyer Protection</span></li>
-              <li><span className="site-footer__fine-print">IMEI & Serial Privacy Shield</span></li>
+              <li><Link to="/safety" className="site-footer__link"><ShieldCheck className="site-footer__trust-icon" /> Escrow Buyer Protection</Link></li>
+              <li><Link to="/safety" className="site-footer__fine-print">IMEI & Serial Privacy Shield</Link></li>
             </ul>
           </div>
 
@@ -70,9 +68,12 @@ export default function Footer() {
             <ul className="site-footer__links">
               <li><Link to="/dashboard" className="site-footer__link">Seller Dashboard</Link></li>
               <li><Link to="/dashboard?tab=orders" className="site-footer__link">Orders & Tracking</Link></li>
-              <li><Link to="/dashboard?tab=wishlist" className="site-footer__link">My Wishlist</Link></li>
-              <li><span className="site-footer__fine-print">Privacy Policy (GDPR / DPDP Compliant)</span></li>
-              <li><span className="site-footer__fine-print">Terms of Circular Exchange</span></li>
+              <li><Link to="/legal/privacy" className="site-footer__link">Privacy Policy</Link></li>
+              <li><Link to="/legal/terms" className="site-footer__link">Terms of Service</Link></li>
+              <li><Link to="/legal/refund" className="site-footer__link">Escrow & Refund Policy</Link></li>
+              <li><Link to="/about" className="site-footer__link">About ReTech</Link></li>
+              <li><Link to="/faq" className="site-footer__link">Help & FAQs</Link></li>
+              <li><Link to="/contact" className="site-footer__link">Contact Support</Link></li>
             </ul>
           </div>
 

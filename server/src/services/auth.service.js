@@ -31,22 +31,37 @@ const register = async ({ name, email, password }) => {
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 const login = async ({ email, password }) => {
-  const user = await User.findOne({ email }).select('+password +refreshTokenHash');
+  const user = await User.findOne({ email }).select('+password +refreshTokenHash +refreshTokens');
   if (!user || !(await user.comparePassword(password))) {
     throw new AppError('Invalid email or password.', 401);
   }
   if (user.isBanned) throw new AppError('Your account has been suspended.', 403);
 
   const { accessToken, refreshToken } = issueTokens(user);
-  user.refreshTokenHash = hashToken(refreshToken);
+  const tokenHash = hashToken(refreshToken);
+
+  // Multi-device session support: keep last 5 active sessions
+  if (!user.refreshTokens) user.refreshTokens = [];
+  user.refreshTokens.push({ tokenHash, createdAt: new Date() });
+  if (user.refreshTokens.length > 5) {
+    user.refreshTokens = user.refreshTokens.slice(-5);
+  }
+  user.refreshTokenHash = tokenHash;
   await user.save({ validateBeforeSave: false });
 
   return { accessToken, refreshToken, user };
 };
 
 // ── Logout ────────────────────────────────────────────────────────────────────
-const logout = async (userId) => {
-  await User.findByIdAndUpdate(userId, { refreshTokenHash: null });
+const logout = async (userId, rawRefreshToken) => {
+  if (rawRefreshToken) {
+    const hashed = hashToken(rawRefreshToken);
+    await User.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { tokenHash: hashed } },
+    });
+  } else {
+    await User.findByIdAndUpdate(userId, { refreshTokens: [], refreshTokenHash: null });
+  }
 };
 
 // ── Refresh Token ─────────────────────────────────────────────────────────────
@@ -58,18 +73,28 @@ const refresh = async (rawRefreshToken) => {
     throw new AppError('Invalid or expired refresh token.', 401);
   }
 
-  const user = await User.findById(decoded.id).select('+refreshTokenHash');
+  const user = await User.findById(decoded.id).select('+refreshTokenHash +refreshTokens');
   if (!user) throw new AppError('User not found.', 401);
 
   const hashed = hashToken(rawRefreshToken);
-  if (user.refreshTokenHash !== hashed) {
-    // Reuse detected — invalidate session entirely
-    await User.findByIdAndUpdate(decoded.id, { refreshTokenHash: null });
-    throw new AppError('Token reuse detected. Please log in again.', 401);
+  const tokenIndex = user.refreshTokens?.findIndex((t) => t.tokenHash === hashed);
+  const isMatch = (tokenIndex !== undefined && tokenIndex !== -1) || user.refreshTokenHash === hashed;
+
+  if (!isMatch) {
+    // Possible token reuse attack — invalidate all sessions
+    await User.findByIdAndUpdate(decoded.id, { refreshTokens: [], refreshTokenHash: null });
+    throw new AppError('Token reuse detected or session expired. Please log in again.', 401);
   }
 
   const { accessToken, refreshToken: newRefreshToken } = issueTokens(user);
-  user.refreshTokenHash = hashToken(newRefreshToken);
+  const newHashed = hashToken(newRefreshToken);
+
+  if (tokenIndex !== undefined && tokenIndex !== -1) {
+    user.refreshTokens[tokenIndex] = { tokenHash: newHashed, createdAt: new Date() };
+  } else {
+    user.refreshTokens = [{ tokenHash: newHashed, createdAt: new Date() }];
+  }
+  user.refreshTokenHash = newHashed;
   await user.save({ validateBeforeSave: false });
 
   return { accessToken, refreshToken: newRefreshToken };

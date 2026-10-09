@@ -2,11 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const listingController = require('../controllers/listing.controller');
-const { protect, optionalAuth } = require('../middlewares/auth.middleware');
+const { protect, optionalAuth, adminOnly } = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate.middleware');
 const upload = require('../middlewares/upload.middleware');
 const { uploadLimiter } = require('../middlewares/rateLimit.middleware');
 const { createListingSchema, updateListingSchema, listingQuerySchema } = require('../validators/listing.validators');
+const deviceReportController = require('../controllers/deviceReport.controller');
 const Category = require('../models/Category.model');
 const apiResponse = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
@@ -22,6 +23,12 @@ router.get('/categories', asyncHandler(async (req, res) => {
 router.get('/my', protect, listingController.getMyListings);
 router.get('/wishlist', protect, listingController.getWishlist);
 router.post('/', protect, uploadLimiter, upload.array('images', 6), validate(createListingSchema), listingController.createListing);
+
+// Device Health Report routes
+router.get('/:id/health-report', deviceReportController.getHealthReport);
+router.post('/:id/health-report', protect, uploadLimiter, upload.array('evidence', 6), deviceReportController.createHealthReport);
+router.patch('/:id/health-report', protect, uploadLimiter, upload.array('evidence', 6), deviceReportController.updateHealthReport);
+router.patch('/:id/health-report/verify', protect, adminOnly, deviceReportController.verifyHealthReport);
 
 // Single listing (public with optional auth)
 router.get('/:id', optionalAuth, listingController.getListingById);

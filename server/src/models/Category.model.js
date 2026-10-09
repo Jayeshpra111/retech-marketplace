@@ -7,6 +7,7 @@ const categorySchema = new mongoose.Schema(
     slug: { type: String, required: true, unique: true, lowercase: true },
     parent: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
     icon: { type: String, default: '' }, // lucide icon name or SVG path
+    isComponent: { type: Boolean, default: false },
     // Weight in kg used for impact calculation
     impactWeightKg: { type: Number, default: 0.5 },
     co2Factor: { type: Number, default: 74 }, // kg CO2 saved per kg of e-waste diverted

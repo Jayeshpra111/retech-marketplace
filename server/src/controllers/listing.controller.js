@@ -15,7 +15,7 @@ const getListings = asyncHandler(async (req, res) => {
 });
 
 const getListingById = asyncHandler(async (req, res) => {
-  const listing = await listingService.getListingById(req.params.id);
+  const listing = await listingService.getListingById(req.params.id, req.user);
   apiResponse(res, 200, 'Listing fetched.', listing);
 });
 

@@ -1,0 +1,577 @@
+/* ==========================================================================
+   ReTech Circular Market - User Dashboard Styles
+   Matches Reference UI Design with Pixel Precision
+   ========================================================================== */
+
+.dashboard-page {
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ==========================================================================
+   1. PROFILE HERO CARD
+   ========================================================================== */
+.dashboard-profile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.5rem 2rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 1.25rem;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-profile__identity {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-profile__avatar {
+  width: 5.75rem;
+  height: 5.75rem;
+  border-radius: 1.25rem;
+  border: 3px solid #10b981;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+.dashboard-profile__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.dashboard-profile__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-profile__name {
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.dashboard-profile__verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dashboard-profile__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  margin-top: 0.15rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-profile__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dashboard-profile__meta-item svg {
+  color: #9ca3af;
+}
+
+.dashboard-profile__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.625rem;
+}
+
+.dashboard-profile__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 1.1rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.dashboard-profile__action--logout {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #e11d48;
+}
+
+.dashboard-profile__action--logout:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+  color: #be123c;
+}
+
+.dashboard-profile__action--admin {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.dashboard-profile__action--admin:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+/* Impact Widget (Right Side of Profile Card) */
+.dashboard-impact-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 380px;
+  max-width: 440px;
+  padding: 0.5rem 1rem 0.5rem 1.75rem;
+  border-left: 1px solid #f3f4f6;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.dashboard-impact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  z-index: 2;
+  position: relative;
+}
+
+.dashboard-impact-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.dashboard-impact-row__icon-wrap {
+  width: 1.85rem;
+  height: 1.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #059669;
+  flex-shrink: 0;
+}
+
+.dashboard-impact-row__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-impact-row__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+  line-height: 1.2;
+}
+
+.dashboard-impact-row__value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.25;
+}
+
+.dashboard-impact-row__sub {
+  font-size: 0.725rem;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.dashboard-impact-illustration {
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 145px;
+  height: 145px;
+  pointer-events: none;
+  opacity: 0.9;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   2. NAVIGATION TABS ROW
+   ========================================================================== */
+.dashboard-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.dashboard-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #374151;
+  transition: all 0.15s ease-in-out;
+}
+
+.dashboard-tab:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.dashboard-tab.is-active {
+  background-color: #047857;
+  border-color: #047857;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(4, 120, 87, 0.25);
+}
+
+.dashboard-tab.is-active svg {
+  color: #ffffff;
+}
+
+.dashboard-tab svg {
+  color: #6b7280;
+  transition: color 0.15s ease;
+}
+
+.dashboard-tab:hover svg {
+  color: #111827;
+}
+
+/* ==========================================================================
+   3. OVERVIEW BANNER CALLOUT
+   ========================================================================== */
+.dashboard-promo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+  box-shadow: 0 4px 15px rgba(6, 78, 59, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-promo__left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  z-index: 2;
+}
+
+.dashboard-promo__icon-wrap {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dashboard-promo__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dashboard-promo__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-promo__text {
+  font-size: 0.875rem;
+  color: #a7f3d0;
+  margin: 0;
+  line-height: 1.45;
+  max-width: 44rem;
+}
+
+.dashboard-promo__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 9999px;
+  background-color: #10b981;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: all 0.15s ease-in-out;
+  z-index: 2;
+}
+
+.dashboard-promo__button:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Background decorative leaves for promo */
+.dashboard-promo::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   4. TAB CONTENTS & LISTINGS/ORDERS GRIDS
+   ========================================================================== */
+.dashboard-tab-content {
+  animation: dashboardFadeIn 0.2s ease-out;
+}
+
+@keyframes dashboardFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.dashboard-section-header__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.dashboard-create-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #047857;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.dashboard-create-link:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.dashboard-listing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard-empty-state {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  background: #ffffff;
+  border: 1px dashed #d1d5db;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 480px;
+  margin: 1.5rem auto;
+}
+
+.dashboard-empty-state__icon {
+  width: 3rem;
+  height: 3rem;
+  color: #9ca3af;
+}
+
+.dashboard-empty-state__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.dashboard-empty-state__message {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.dashboard-button--primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.35rem;
+  border-radius: 9999px;
+  background: #047857;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.dashboard-button--primary:hover {
+  background: #065f46;
+}
+
+/* ==========================================================================
+   5. RESPONSIVE ADAPTATIONS
+   ========================================================================== */
+@media (max-width: 900px) {
+  .dashboard-profile {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.25rem;
+  }
+
+  .dashboard-impact-card {
+    border-left: 0;
+    border-top: 1px solid #f3f4f6;
+    padding-left: 0;
+    padding-top: 1.25rem;
+    min-width: unset;
+    max-width: 100%;
+  }
+
+  .dashboard-promo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ==========================================================================
+   6. DARK THEME STYLING
+   ========================================================================== */
+[data-theme="dark"] .dashboard-profile,
+body.dark-theme .dashboard-profile {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .dashboard-profile__name,
+body.dark-theme .dashboard-profile__name {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .dashboard-profile__meta-row,
+body.dark-theme .dashboard-profile__meta-row {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .dashboard-impact-card,
+body.dark-theme .dashboard-impact-card {
+  border-left-color: #1e293b;
+  border-top-color: #1e293b;
+}
+
+[data-theme="dark"] .dashboard-impact-row__label,
+body.dark-theme .dashboard-impact-row__label {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .dashboard-impact-row__value,
+body.dark-theme .dashboard-impact-row__value {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .dashboard-impact-row__sub,
+body.dark-theme .dashboard-impact-row__sub {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .dashboard-tab,
+body.dark-theme .dashboard-tab {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .dashboard-tab:hover,
+body.dark-theme .dashboard-tab:hover {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .dashboard-tab.is-active,
+body.dark-theme .dashboard-tab.is-active {
+  background-color: #047857;
+  border-color: #047857;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .dashboard-section-header__title,
+body.dark-theme .dashboard-section-header__title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .dashboard-empty-state,
+body.dark-theme .dashboard-empty-state {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .dashboard-empty-state__title,
+body.dark-theme .dashboard-empty-state__title {
+  color: #f8fafc;
+}

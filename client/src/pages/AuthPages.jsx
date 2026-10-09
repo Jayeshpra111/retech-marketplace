@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Lock,
   Mail,
@@ -454,6 +454,154 @@ export function VerifyEmailPage() {
         >
           Proceed to Sign In
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Forgot Password Page
+// ─────────────────────────────────────────────────────────────────────────────
+export function ForgotPasswordPage() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+    setLoading(true);
+    try {
+      const { api } = await import('../services/api');
+      await api.auth.forgotPassword(email);
+      setSubmitted(true);
+    } catch {
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-verification">
+      <div className="auth-verification__card" style={{ maxWidth: '420px', textAlign: 'left' }}>
+        <h1 className="auth-verification__title" style={{ fontSize: '24px', textAlign: 'center' }}>Reset Password</h1>
+        {submitted ? (
+          <div style={{ textAlign: 'center' }}>
+            <p className="auth-verification__summary">
+              If an account with <strong>{email}</strong> exists, we've sent password reset instructions.
+            </p>
+            <Link to="/login" className="auth-form__submit" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
+              Return to Login
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <p style={{ color: '#94A3B8', fontSize: '14px', lineHeight: 1.5, marginBottom: '20px' }}>
+              Enter your registered email address and we will send you a secure link to reset your password.
+            </p>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#CBD5E1', marginBottom: '6px' }}>
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                style={{ width: '100%', padding: '12px', borderRadius: '10px', background: '#0F172A', color: '#fff', border: '1px solid #334155' }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="auth-form__submit"
+            >
+              {loading ? 'Sending link...' : 'Send Reset Link'}
+            </button>
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <Link to="/login" style={{ color: '#10B981', fontSize: '14px', textDecoration: 'none' }}>
+                Back to Sign In
+              </Link>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reset Password Page
+// ─────────────────────────────────────────────────────────────────────────────
+export function ResetPasswordPage() {
+  const { token } = useParams();
+  const navigate = useNavigate();
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { api } = await import('../services/api');
+      await api.auth.resetPassword(token, password);
+      toast.success('Password updated successfully! Please log in.');
+      navigate('/login');
+    } catch (err) {
+      toast.error(err.message || 'Invalid or expired reset token.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-verification">
+      <div className="auth-verification__card" style={{ maxWidth: '420px', textAlign: 'left' }}>
+        <h1 className="auth-verification__title" style={{ fontSize: '24px', textAlign: 'center' }}>Set New Password</h1>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#CBD5E1', marginBottom: '6px' }}>
+              New Password
+            </label>
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Minimum 8 characters"
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: '#0F172A', color: '#fff', border: '1px solid #334155' }}
+            />
+          </div>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#CBD5E1', marginBottom: '6px' }}>
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm new password"
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: '#0F172A', color: '#fff', border: '1px solid #334155' }}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="auth-form__submit"
+          >
+            {loading ? 'Updating Password...' : 'Save New Password'}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -1,15 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Star, Wrench, ShieldCheck, Leaf } from 'lucide-react';
+import { Heart, Star, Wrench, ShieldCheck, Leaf, Pencil, Trash2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CONDITION_GRADES } from '../data/mockData';
 import '../styles/components.css';
 
-export default function ListingCard({ listing }) {
+export default function ListingCard({ listing, onEdit, onDelete, isOwner }) {
   const { wishlist, toggleWishlist } = useApp();
-  const isWishlisted = wishlist.includes(listing.id);
+  const listingId = listing.id || listing._id;
+  const isWishlisted = wishlist.includes(listingId);
   const conditionInfo = CONDITION_GRADES[listing.condition] || CONDITION_GRADES.good;
   const city = listing.city || (typeof listing.location === 'string' ? listing.location : listing.location?.city) || 'Location unavailable';
+  
+  const displayImage = (listing.images && listing.images.length > 0)
+    ? (typeof listing.images[0] === 'string' ? listing.images[0] : listing.images[0]?.url)
+    : 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=500';
+
   const seller = typeof listing.seller === 'object' && listing.seller !== null
     ? listing.seller
     : {
@@ -32,11 +38,15 @@ export default function ListingCard({ listing }) {
 
       {/* Image & Badges Container */}
       <div className="listing-card__media">
-        <Link to={`/listings/${listing.id}`}>
+        <Link to={`/listings/${listingId}`}>
           <img
-            src={listing.images[0]}
+            src={displayImage}
             alt={listing.title}
             loading="lazy"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=500';
+            }}
             className="listing-card__image"
           />
         </Link>
@@ -54,7 +64,7 @@ export default function ListingCard({ listing }) {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleWishlist(listing.id);
+            toggleWishlist(listingId);
           }}
           aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
           className={`listing-card__favorite ${isWishlisted ? 'is-saved' : ''}`}
@@ -88,7 +98,7 @@ export default function ListingCard({ listing }) {
           </div>
 
           {/* Title */}
-          <Link to={`/listings/${listing.id}`}>
+          <Link to={`/listings/${listingId}`}>
             <h3 className="listing-card__title">
               {listing.title}
             </h3>
@@ -137,6 +147,40 @@ export default function ListingCard({ listing }) {
           </div>
         </div>
       </div>
+
+      {/* Owner Actions Toolbar (Dashboard or Owner View) */}
+      {(onEdit || isOwner) && (
+        <div className="listing-card__owner-actions">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit(listing);
+              }}
+              className="listing-card__action-btn listing-card__action-btn--edit"
+            >
+              <Pencil size={13} />
+              <span>Edit Listing</span>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete(listing);
+              }}
+              className="listing-card__action-btn listing-card__action-btn--delete"
+            >
+              <Trash2 size={13} />
+              <span>Delete</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
