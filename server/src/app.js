@@ -36,21 +36,38 @@ app.set('trust proxy', 1);
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use(helmet());
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
+// ── CORS & Private Network Access ─────────────────────────────────────────────
 const allowedOrigins = CLIENT_URL.split(',').map((u) => u.trim()).filter(Boolean);
+
+// Allow Private Network Access for local testing from public web origins
+app.use((req, res, next) => {
+  if (req.headers['access-control-request-private-network']) {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  }
+  next();
+});
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.includes('*') ||
+        origin.endsWith('.vercel.app') ||
+        origin === 'https://retech-marketplace.vercel.app'
+      ) {
         return callback(null, true);
       }
       return callback(new Error(`CORS policy does not allow access from origin: ${origin}`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
+
+app.options('*', cors());
 
 // ── Request parsing ───────────────────────────────────────────────────────────
 // Raw body for webhook (must come before express.json)

@@ -12,9 +12,22 @@ const { startCronJobs } = require('./utils/cronJobs');
 const server = http.createServer(app);
 
 // ── Socket.io ─────────────────────────────────────────────────────────────────
+const allowedOrigins = CLIENT_URL.split(',').map((u) => u.trim()).filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_URL,
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.includes('*') ||
+        origin.endsWith('.vercel.app') ||
+        origin === 'https://retech-marketplace.vercel.app'
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Socket CORS disallowed: ${origin}`));
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
