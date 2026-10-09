@@ -1,5 +1,8 @@
 // client/src/services/api.js — Modern unified API client with 401 refresh retry
-const API_BASE = '/api/v1';
+const RAW_API_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') : '';
+const API_BASE = RAW_API_URL
+  ? (RAW_API_URL.endsWith('/api/v1') ? RAW_API_URL : `${RAW_API_URL}/api/v1`)
+  : '/api/v1';
 
 export const getAuthToken = () => localStorage.getItem('retech_token');
 

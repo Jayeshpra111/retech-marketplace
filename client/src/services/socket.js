@@ -15,7 +15,8 @@ export const getSocket = () => {
   }
 
   if (!socket) {
-    socket = io('/', {
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || '/';
+    socket = io(socketUrl, {
       auth: { token },
       autoConnect: true,
       transports: ['websocket', 'polling'],
