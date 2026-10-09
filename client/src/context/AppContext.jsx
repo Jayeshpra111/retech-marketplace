@@ -5,13 +5,30 @@ import { api, setAuthToken, getAuthToken } from '../services/api';
 const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('retech_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [listings, setListings] = useState([]);
   const [isListingsLoading, setIsListingsLoading] = useState(true);
   const [wishlist, setWishlist] = useState([]);
   const [orders, setOrders] = useState([]);
   const [serverImpact, setServerImpact] = useState(null);
+
+  // Helper to persist user state in localStorage
+  const saveUser = (u) => {
+    setUser(u);
+    if (u) {
+      localStorage.setItem('retech_user', JSON.stringify(u));
+    } else {
+      localStorage.removeItem('retech_user');
+    }
+  };
 
   // Theme Mode: 'light' or 'dark'
   const [theme, setTheme] = useState(() => {
@@ -151,7 +168,9 @@ export const AppProvider = ({ children }) => {
         try {
           const res = await api.auth.getMe();
           if (res?.data) {
-            setUser(formatUser(res.data));
+            const formatted = formatUser(res.data);
+            saveUser(formatted);
+
             // Load user's wishlist and orders
             try {
               const [wlRes, ordersRes] = await Promise.all([
@@ -168,11 +187,17 @@ export const AppProvider = ({ children }) => {
               // Ignore secondary failures
             }
           }
-        } catch {
-          // Token expired or invalid
-          setAuthToken(null);
-          setUser(null);
+        } catch (err) {
+          // Only clear session if explicitly unauthenticated (401), NOT on network hiccups or timeouts!
+          if (err?.status === 401) {
+            setAuthToken(null);
+            saveUser(null);
+          } else {
+            console.warn('Could not refresh user profile on reload, keeping cached session:', err?.message);
+          }
         }
+      } else {
+        saveUser(null);
       }
       setIsAuthLoading(false);
     };
@@ -186,9 +211,9 @@ export const AppProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await api.auth.login({ email, password });
     if (res?.data?.accessToken) {
-      setAuthToken(res.data.accessToken);
+      setAuthToken(res.data.accessToken, res.data.refreshToken);
       const formatted = formatUser(res.data.user);
-      setUser(formatted);
+      saveUser(formatted);
 
       // Load user's wishlist and orders upon successful login
       try {
@@ -227,7 +252,7 @@ export const AppProvider = ({ children }) => {
       // Ignore network errors on logout
     }
     setAuthToken(null);
-    setUser(null);
+    saveUser(null);
     setWishlist([]);
     setOrders([]);
     toast.success('Logged out successfully.');

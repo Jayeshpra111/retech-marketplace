@@ -5,14 +5,20 @@ const API_BASE = RAW_API_URL
   : '/api/v1';
 
 export const getAuthToken = () => localStorage.getItem('retech_token');
+export const getRefreshToken = () => localStorage.getItem('retech_refresh_token');
 
-export const setAuthToken = (token) => {
+export const setAuthToken = (token, refreshToken = null) => {
   if (token) {
     localStorage.setItem('retech_token', token);
+    if (refreshToken) {
+      localStorage.setItem('retech_refresh_token', refreshToken);
+    }
   } else {
     localStorage.removeItem('retech_token');
+    localStorage.removeItem('retech_refresh_token');
   }
 };
+
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -60,22 +66,26 @@ async function request(endpoint, options = {}, isRetry = false) {
       isRefreshing = true;
 
       try {
+        const currentRefreshToken = getRefreshToken();
         const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: currentRefreshToken }),
         });
 
         if (refreshRes.ok) {
           const refreshData = await refreshRes.json();
           const newToken = refreshData.data?.accessToken;
+          const newRefreshToken = refreshData.data?.refreshToken || currentRefreshToken;
           if (newToken) {
-            setAuthToken(newToken);
+            setAuthToken(newToken, newRefreshToken);
             processQueue(null, newToken);
             isRefreshing = false;
             return request(endpoint, options, true);
           }
         }
+
 
         // If refresh failed
         processQueue(new Error('Session expired'), null);

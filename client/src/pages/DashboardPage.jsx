@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const navigate = useNavigate();
 
-  const { user, listings, wishlist, logout } = useApp();
+  const { user, isAuthLoading, listings, wishlist, logout } = useApp();
 
   const [myOrders, setMyOrders] = useState([]);
   const [sellingOrders, setSellingOrders] = useState([]);
@@ -87,9 +87,18 @@ export default function DashboardPage() {
     }
   }, [user, listings]);
 
+  if (isAuthLoading && !user) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <div className="spinner" style={{ width: '40px', height: '40px', border: '3px solid rgba(16, 185, 129, 0.2)', borderTopColor: '#10B981', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="dashboard-signin">
+
         <div className="dashboard-signin__icon">
           <User className="dashboard-icon dashboard-icon--large" />
         </div>

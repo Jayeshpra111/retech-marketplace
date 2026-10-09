@@ -33,26 +33,28 @@ const login = asyncHandler(async (req, res) => {
   setRefreshCookie(res, refreshToken);
   apiResponse(res, 200, 'Logged in successfully.', {
     accessToken,
+    refreshToken,
     user: formatUserResponse(user),
   });
 });
 
 const logout = asyncHandler(async (req, res) => {
-  const rawToken = req.cookies?.refreshToken;
+  const rawToken = req.cookies?.refreshToken || req.body?.refreshToken;
   await authService.logout(req.user._id, rawToken);
   clearRefreshCookie(res);
   apiResponse(res, 200, 'Logged out successfully.');
 });
 
 const refresh = asyncHandler(async (req, res) => {
-  const rawToken = req.cookies?.refreshToken;
+  const rawToken = req.cookies?.refreshToken || req.body?.refreshToken;
   if (!rawToken) {
     return res.status(401).json({ success: false, message: 'No refresh token.' });
   }
   const { accessToken, refreshToken } = await authService.refresh(rawToken);
   setRefreshCookie(res, refreshToken);
-  apiResponse(res, 200, 'Token refreshed.', { accessToken });
+  apiResponse(res, 200, 'Token refreshed.', { accessToken, refreshToken });
 });
+
 
 const verifyEmail = asyncHandler(async (req, res) => {
   await authService.verifyEmail(req.params.token);
