@@ -67,8 +67,6 @@ app.use(
   })
 );
 
-app.options('*', cors());
-
 // ── Request parsing ───────────────────────────────────────────────────────────
 // Raw body for webhook (must come before express.json)
 app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }));
