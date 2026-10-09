@@ -12,6 +12,7 @@ import {
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
+import PaymentGatewayModal from '../components/PaymentGatewayModal';
 import '../styles/pages.css';
 
 // Helper to dynamically load external scripts like Razorpay
@@ -48,6 +49,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('escrow_online');
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(null);
+  const [activePaymentOrder, setActivePaymentOrder] = useState(null);
 
   // Fetch fresh listing from backend if not in cache
   useEffect(() => {
@@ -167,8 +169,12 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Check if real key or development fallback
-      if (paymentData.keyId && !paymentData.keyId.startsWith('mock_')) {
+      const hasLiveRazorpay =
+        paymentData.keyId &&
+        (paymentData.keyId.startsWith('rzp_live_') || paymentData.keyId.startsWith('rzp_test_'));
+
+      // Check if real live Razorpay credentials are set up
+      if (hasLiveRazorpay) {
         const rzpOptions = {
           key: paymentData.keyId,
           amount: paymentData.amount,
@@ -212,7 +218,7 @@ export default function CheckoutPage() {
           modal: {
             ondismiss: function () {
               setIsProcessing(false);
-              toast('Payment cancelled. Your order remains pending in dashboard.');
+              toast('Payment window closed. You can pay or discard the order in your dashboard.');
             },
           },
         };
@@ -220,18 +226,9 @@ export default function CheckoutPage() {
         const rzp = new window.Razorpay(rzpOptions);
         rzp.open();
       } else {
-        // Development / Test mode without Razorpay key configured
-        toast.success('Dev Mode: Order registered. Complete payment once keys are configured.');
+        // Open the interactive Escrow Payment Acceptance Modal with UPI, Card, NetBanking & COD options
         setIsProcessing(false);
-        setOrderComplete({
-          id: createdOrder._id,
-          title: listing.title,
-          amount: totalAmount,
-          trackingNumber: `DEV-ORDER-${createdOrder._id.slice(-6)}`,
-          co2Saved: listing.co2SavedKg || 45,
-          status: 'pending',
-          paymentMethod: 'online',
-        });
+        setActivePaymentOrder({ ...createdOrder, amount: totalAmount });
       }
     } catch (err) {
       setIsProcessing(false);
@@ -504,6 +501,33 @@ export default function CheckoutPage() {
           </div>
         </div>
       </form>
+
+      {/* Escrow Payment Gateway & Method Acceptance Modal */}
+      {activePaymentOrder && (
+        <PaymentGatewayModal
+          isOpen={Boolean(activePaymentOrder)}
+          order={activePaymentOrder}
+          itemTitle={listing.title}
+          amount={totalAmount}
+          sellerName={sellerName}
+          onClose={() => setActivePaymentOrder(null)}
+          onSuccess={(paidOrder) => {
+            setActivePaymentOrder(null);
+            setOrderComplete({
+              id: paidOrder._id || activePaymentOrder._id,
+              title: listing.title,
+              amount: totalAmount,
+              trackingNumber: `RETECH-ESCROW-${(activePaymentOrder._id || '').slice(-6)}`,
+              co2Saved: listing.co2SavedKg || 45,
+              status: paidOrder.orderStatus || 'paid',
+              paymentMethod: paidOrder.paymentMethod || 'online',
+            });
+          }}
+          onDiscard={() => {
+            setActivePaymentOrder(null);
+          }}
+        />
+      )}
     </div>
   );
 }

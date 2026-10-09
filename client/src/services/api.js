@@ -178,6 +178,8 @@ export const api = {
     getById: (id) => request(`/orders/${id}`),
     updateStatus: (id, data) => request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) }),
     confirmDelivery: (id) => request(`/orders/${id}/confirm-delivery`, { method: 'POST' }),
+    cancel: (id) => request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) }),
+    delete: (id) => request(`/orders/${id}`, { method: 'DELETE' }),
   },
   payments: {
     create: (orderId) => request('/payments/create', { method: 'POST', body: JSON.stringify({ orderId }) }),

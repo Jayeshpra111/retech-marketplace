@@ -230,4 +230,26 @@ const transitionOrder = async (orderId, userId, role, newStatus, extraData = {})
   return updatedOrder;
 };
 
-module.exports = { createOrder, getMyOrders, getSellingOrders, getOrderById, transitionOrder };
+const deleteOrder = async (orderId, userId, role) => {
+  const order = await Order.findById(orderId);
+  if (!order) throw new AppError('Order not found.', 404);
+
+  const isBuyer = order.buyer.toString() === userId.toString();
+  const isSeller = order.seller.toString() === userId.toString();
+  const isAdmin = role === 'admin';
+
+  if (!isBuyer && !isSeller && !isAdmin) {
+    throw new AppError('Access denied.', 403);
+  }
+
+  // If pending or reserved, restore the listing back to active
+  if (['pending', 'cancelled'].includes(order.orderStatus)) {
+    await Listing.findByIdAndUpdate(order.listing, { status: 'active' });
+  }
+
+  await Order.findByIdAndDelete(orderId);
+  return { success: true, id: orderId };
+};
+
+module.exports = { createOrder, getMyOrders, getSellingOrders, getOrderById, transitionOrder, deleteOrder };
+

@@ -38,4 +38,10 @@ const confirmDelivery = asyncHandler(async (req, res) => {
   apiResponse(res, 200, 'Delivery confirmed.', order);
 });
 
-module.exports = { createOrder, getMyOrders, getSellingOrders, getOrderById, updateOrderStatus, confirmDelivery };
+const deleteOrder = asyncHandler(async (req, res) => {
+  const result = await orderService.deleteOrder(req.params.id, req.user._id, req.user.role);
+  apiResponse(res, 200, 'Order discarded successfully.', result);
+});
+
+module.exports = { createOrder, getMyOrders, getSellingOrders, getOrderById, updateOrderStatus, confirmDelivery, deleteOrder };
+

@@ -19,12 +19,15 @@ import {
   ChevronRight,
   Recycle,
   Footprints,
+  Trash2,
+  CreditCard,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import ListingCard from '../components/ListingCard';
 import EditListingModal from '../components/EditListingModal';
+import PaymentGatewayModal from '../components/PaymentGatewayModal';
 import '../styles/pages.css';
 import '../styles/dashboard.css';
 
@@ -49,6 +52,9 @@ export default function DashboardPage() {
   const [disputeReason, setDisputeReason] = useState('Item defective or not functioning as described');
   const [disputeDescription, setDisputeDescription] = useState('');
   const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
+
+  // Pay Now modal state for pending orders
+  const [payingOrder, setPayingOrder] = useState(null);
 
   const handleLogout = () => {
     logout();
@@ -123,6 +129,24 @@ export default function DashboardPage() {
       toast.success('Delivery confirmed! Escrow funds have been successfully released to the seller.');
     } catch (err) {
       toast.error(err.message || 'Could not confirm delivery.');
+    }
+  };
+
+  // Discard / cancel order action
+  const handleDiscardOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to discard this order? The order will be cancelled and the item will be available for others on the marketplace.')) {
+      return;
+    }
+    try {
+      try {
+        await api.orders.delete(orderId);
+      } catch {
+        await api.orders.cancel(orderId);
+      }
+      setMyOrders((prev) => prev.filter((o) => (o._id || o.id) !== orderId));
+      toast.success('Order discarded and cancelled successfully.');
+    } catch (err) {
+      toast.error(err.message || 'Could not discard order.');
     }
   };
 
@@ -426,7 +450,31 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="dashboard-order__actions">
-                    {order.orderStatus !== 'disputed' && order.orderStatus !== 'completed' && (
+                    {/* Discard Order button for pending, unpaid or cancelled orders */}
+                    {(order.orderStatus === 'pending' || order.orderStatus === 'cancelled' || order.paymentStatus === 'unpaid') && (
+                      <button
+                        onClick={() => handleDiscardOrder(order._id || order.id)}
+                        className="dashboard-order__button dashboard-order__button--discard"
+                        title="Cancel and discard this order"
+                      >
+                        <Trash2 size={14} style={{ marginRight: '6px' }} />
+                        Discard Order
+                      </button>
+                    )}
+
+                    {/* Pay Now button for pending unpaid orders */}
+                    {order.paymentStatus === 'unpaid' && order.orderStatus === 'pending' && (
+                      <button
+                        onClick={() => setPayingOrder(order)}
+                        className="dashboard-order__button dashboard-order__button--pay"
+                        title="Pay via Online Escrow or switch to Cash"
+                      >
+                        <CreditCard size={14} style={{ marginRight: '6px' }} />
+                        Pay Online / Choose Method
+                      </button>
+                    )}
+
+                    {order.orderStatus !== 'disputed' && order.orderStatus !== 'completed' && order.orderStatus !== 'cancelled' && (
                       <button
                         onClick={() => setDisputeModalOrder(order)}
                         className="dashboard-order__button dashboard-order__button--secondary"
@@ -578,6 +626,30 @@ export default function DashboardPage() {
         onClose={() => setEditingListing(null)}
         onUpdated={handleListingUpdated}
       />
+
+      {/* Payment Gateway Modal for Pending Unpaid Orders */}
+      {payingOrder && (
+        <PaymentGatewayModal
+          isOpen={Boolean(payingOrder)}
+          order={payingOrder}
+          itemTitle={payingOrder.listing?.title || payingOrder.title}
+          amount={payingOrder.priceAtPurchase || payingOrder.amount}
+          sellerName={payingOrder.seller?.name || payingOrder.sellerName}
+          onClose={() => setPayingOrder(null)}
+          onSuccess={(updatedOrder) => {
+            setMyOrders((prev) =>
+              prev.map((o) =>
+                (o._id || o.id) === (updatedOrder._id || updatedOrder.id)
+                  ? { ...o, ...updatedOrder }
+                  : o
+              )
+            );
+          }}
+          onDiscard={(discardedId) => {
+            setMyOrders((prev) => prev.filter((o) => (o._id || o.id) !== discardedId));
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -10,5 +10,7 @@ router.get('/selling', protect, orderController.getSellingOrders);
 router.get('/:id', protect, orderController.getOrderById);
 router.patch('/:id/status', protect, orderController.updateOrderStatus);
 router.post('/:id/confirm-delivery', protect, orderController.confirmDelivery);
+router.delete('/:id', protect, orderController.deleteOrder);
 
 module.exports = router;
+

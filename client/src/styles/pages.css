@@ -2025,6 +2025,37 @@
   background: #047857;
 }
 
+.dashboard-order__button--discard {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.dashboard-order__button--discard:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.dashboard-order__button--pay {
+  border: 0;
+  background: #059669;
+  color: #ffffff;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+  transition: all 0.2s ease;
+}
+
+.dashboard-order__button--pay:hover {
+  background: #047857;
+  box-shadow: 0 4px 6px rgba(5, 150, 105, 0.3);
+}
+
 @media (min-width: 640px) {
 
   .checkout-page,
