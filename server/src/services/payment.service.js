@@ -16,7 +16,9 @@ const createPaymentOrder = async (orderId, userId) => {
   let gatewayOrderId = null;
 
   // Real Razorpay API integration
-  if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && !RAZORPAY_KEY_ID.startsWith('mock_')) {
+  const hasRealKeys = RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET &&
+    (RAZORPAY_KEY_ID.startsWith('rzp_live_') || RAZORPAY_KEY_ID.startsWith('rzp_test_'));
+  if (hasRealKeys) {
     try {
       const authHeader = 'Basic ' + Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
       const response = await fetch('https://api.razorpay.com/v1/orders', {
@@ -94,7 +96,9 @@ const verifyPayment = async (orderId, userId, { gatewayPaymentId, gatewayOrderId
     throw new AppError('Payment gateway secret is not configured on the server.', 500);
   }
 
-  if (RAZORPAY_KEY_SECRET && !RAZORPAY_KEY_SECRET.startsWith('mock_')) {
+  const hasRealSecret = RAZORPAY_KEY_SECRET &&
+    (RAZORPAY_KEY_ID.startsWith('rzp_live_') || RAZORPAY_KEY_ID.startsWith('rzp_test_'));
+  if (hasRealSecret) {
     if (!signature) {
       throw new AppError('Payment signature is missing and required for verification.', 400);
     }
@@ -133,7 +137,9 @@ const handleWebhook = async (rawBody, signature) => {
     throw new AppError('Missing webhook signature.', 400);
   }
 
-  if (RAZORPAY_WEBHOOK_SECRET && !RAZORPAY_WEBHOOK_SECRET.startsWith('mock_')) {
+  const hasRealWebhookSecret = RAZORPAY_WEBHOOK_SECRET &&
+    (RAZORPAY_KEY_ID.startsWith('rzp_live_') || RAZORPAY_KEY_ID.startsWith('rzp_test_'));
+  if (hasRealWebhookSecret) {
     const expected = crypto
       .createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
       .update(rawBody)
