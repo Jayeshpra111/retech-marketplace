@@ -1,4 +1,4 @@
-// src/utils/cronJobs.js — Periodic maintenance jobs (auto-confirm, stale reservations, offer expiry)
+
 const Order = require('../models/Order.model');
 const Offer = require('../models/Offer.model');
 const orderService = require('../services/order.service');
@@ -12,8 +12,22 @@ const runAutoConfirmJob = async () => {
     });
 
     for (const order of expiredOrders) {
-      logger.info(`Auto-confirming delivered order: ${order._id}`);
-      await orderService.transitionOrder(order._id, null, null, 'completed', { isSystem: true });
+      try {
+        logger.info(`Auto-confirming delivered order: ${order._id}`);
+
+        await orderService.transitionOrder(
+          order._id,
+          null,
+          null,
+          'completed',
+          { isSystem: true }
+        );
+      } catch (err) {
+        logger.error(
+          { err, orderId: order._id },
+          'Failed to auto-confirm delivered order'
+        );
+      }
     }
   } catch (err) {
     logger.error({ err }, 'Error running auto-confirm job');
@@ -23,6 +37,7 @@ const runAutoConfirmJob = async () => {
 const runStaleReservationCleanup = async () => {
   try {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+
     const staleOrders = await Order.find({
       orderStatus: 'pending',
       paymentMethod: 'online',
@@ -31,8 +46,24 @@ const runStaleReservationCleanup = async () => {
     });
 
     for (const order of staleOrders) {
-      logger.info(`Cleaning up stale unpaid order: ${order._id}`);
-      await orderService.transitionOrder(order._id, null, null, 'cancelled', { isSystem: true });
+      try {
+        logger.info(`Cleaning up stale unpaid order: ${order._id}`);
+
+        await orderService.transitionOrder(
+          order._id,
+          null,
+          null,
+          'cancelled',
+          { isSystem: true }
+        );
+
+        logger.info(`Successfully cancelled stale order: ${order._id}`);
+      } catch (err) {
+        logger.error(
+          { err, orderId: order._id },
+          'Failed to cancel stale unpaid order'
+        );
+      }
     }
   } catch (err) {
     logger.error({ err }, 'Error running stale reservation cleanup job');
@@ -42,9 +73,15 @@ const runStaleReservationCleanup = async () => {
 const runOfferExpiryJob = async () => {
   try {
     const result = await Offer.updateMany(
-      { status: 'pending', expiresAt: { $lte: new Date() } },
-      { status: 'expired' }
+      {
+        status: 'pending',
+        expiresAt: { $lte: new Date() },
+      },
+      {
+        $set: { status: 'expired' },
+      }
     );
+
     if (result.modifiedCount > 0) {
       logger.info(`Expired ${result.modifiedCount} pending offers`);
     }
@@ -54,20 +91,74 @@ const runOfferExpiryJob = async () => {
 };
 
 const startCronJobs = (intervalMs = 5 * 60 * 1000) => {
-  logger.info('Starting automated background jobs (auto-confirm, stale orders, offer expiry)');
-  // Run once on startup
-  runAutoConfirmJob();
-  runStaleReservationCleanup();
-  runOfferExpiryJob();
+  logger.info(
+    'Starting automated background jobs (auto-confirm, stale orders, offer expiry)'
+  );
 
-  // Run on interval
+  // Prevent overlapping executions of each individual job.
+  let autoConfirmRunning = false;
+  let staleCleanupRunning = false;
+  let offerExpiryRunning = false;
+
+  const runSafely = async (job, isRunning, setRunning, jobName) => {
+    if (isRunning()) {
+      logger.warn(`${jobName} skipped because the previous run is still active`);
+      return;
+    }
+
+    setRunning(true);
+
+    try {
+      await job();
+    } catch (err) {
+      logger.error({ err }, `${jobName} failed unexpectedly`);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const runAutoConfirmSafely = () =>
+    runSafely(
+      runAutoConfirmJob,
+      () => autoConfirmRunning,
+      (value) => { autoConfirmRunning = value; },
+      'Auto-confirm job'
+    );
+
+  const runStaleCleanupSafely = () =>
+    runSafely(
+      runStaleReservationCleanup,
+      () => staleCleanupRunning,
+      (value) => { staleCleanupRunning = value; },
+      'Stale-order cleanup job'
+    );
+
+  const runOfferExpirySafely = () =>
+    runSafely(
+      runOfferExpiryJob,
+      () => offerExpiryRunning,
+      (value) => { offerExpiryRunning = value; },
+      'Offer-expiry job'
+    );
+
+  // Run once at startup.
+  void runAutoConfirmSafely();
+  void runStaleCleanupSafely();
+  void runOfferExpirySafely();
+
+  // Run periodically.
   const timer = setInterval(() => {
-    runAutoConfirmJob();
-    runStaleReservationCleanup();
-    runOfferExpiryJob();
+    void runAutoConfirmSafely();
+    void runStaleCleanupSafely();
+    void runOfferExpirySafely();
   }, intervalMs);
 
   return timer;
 };
 
-module.exports = { startCronJobs, runAutoConfirmJob, runStaleReservationCleanup, runOfferExpiryJob };
+module.exports = {
+  startCronJobs,
+  runAutoConfirmJob,
+  runStaleReservationCleanup,
+  runOfferExpiryJob,
+};
